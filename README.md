@@ -1,0 +1,83 @@
+# Mapping Physicochemical Features onto 2D Interface Planes for Protein–Protein Binding Affinity Prediction
+
+Progetto per il corso *Advanced Machine Learning for Physics* (Sapienza Università di Roma, A.A. 2025/2026).
+
+<!--
+Dopo aver creato il repository su GitHub, sostituisci <tuo-utente> nel link qui sotto con il tuo
+username reale, così il badge apre direttamente il notebook in Google Colab.
+-->
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<tuo-utente>/ppb-affinity/blob/main/PPB_Affinity.ipynb)
+
+## Descrizione
+
+Framework fisicamente motivato per la predizione dell'affinità di legame ($K_D$ / $\Delta G$) tra coppie di
+proteine, a partire dal dataset *PPB-Affinity / Affinity Benchmark v5.5*, tramite mappe 2D di complementarità
+(forma, elettrostatica, idrofobicità) usate come input di una CNN. Proposta di progetto: E. Milanetti, G. Ruocco.
+
+Il report completo è in [`report/report.pdf`](report/report.pdf) (sorgente LaTeX in `report/report.tex`).
+
+## Come eseguire
+
+- **Google Colab (consigliato):** clicca sul badge in alto. Il notebook clona questo repository e lavora
+  direttamente sui file caricati su GitHub — nessuna installazione locale necessaria.
+- **In locale:**
+  ```bash
+  git clone https://github.com/<tuo-utente>/ppb-affinity.git
+  cd ppb-affinity
+  pip install -r requirements.txt
+  jupyter notebook PPB_Affinity.ipynb
+  ```
+
+Il notebook carica risultati già calcolati (CSV, `.npy`, pesi del modello): non richiede ChimeraX né un
+cluster HPC per essere eseguito e ispezionato.
+
+## Struttura del repository
+
+```
+ppb-affinity/
+├── README.md
+├── requirements.txt
+├── PPB_Affinity.ipynb          # notebook narrativo, apribile in Colab
+│
+├── data/
+│   └── affinity_dataset.csv    # Affinity Benchmark v5.5 (207 complessi, sep=';')
+│
+├── src/                        # moduli riutilizzabili della pipeline (Task 1)
+│   ├── __init__.py
+│   ├── pdb.py                  # parsing/scrittura PDB, download da RCSB
+│   ├── interface.py            # identificazione residui di interfaccia (cutoff 5 Å)
+│   ├── surface.py              # generazione superficie "sampler" + densità approssimata
+│   ├── chimerax.py             # generazione superficie via ChimeraX headless
+│   ├── dataset.py               # lettura dei record del dataset
+│   └── pipeline.py             # orchestrazione della pipeline Task 1
+│
+├── scripts/
+│   ├── task1/
+│   │   ├── run_interface_extraction.py   # CLI della pipeline Task 1
+│   │   ├── filter_dimers.py              # selezione dei complessi dimerici
+│   │   └── clean_task1.py                # pulizia delle cartelle di output
+│   ├── task2/    # (da popolare: mappatura Zernike)
+│   ├── task3/    # (da popolare: piani di complementarità 2D)
+│   └── task4/    # (da popolare: training CNN)
+│
+├── outputs/
+│   └── task1/
+│       ├── manifest.csv                  # esito dell'elaborazione per ogni complesso
+│       └── 00000_1KTZ/                   # esempio di output per un complesso
+│
+├── figures/
+│   ├── interface_hist.pdf
+│   └── interface_hist.png
+│
+└── report/
+    ├── report.tex
+    └── report.pdf
+```
+
+## Stato di avanzamento
+
+- [x] Task 1 — Interface Identification and Surface Patch Extraction
+- [ ] Task 2 — Zernike-Based Complementarity Mapping
+- [ ] Task 3 — Construction of 2D Complementarity Planes
+- [ ] Task 4 — CNN-Based Binding Affinity Prediction
+- [ ] Task 5 (opzionale) — Affinity Maturation / Docking Pose Discrimination
