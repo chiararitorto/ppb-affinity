@@ -56,18 +56,22 @@ ppb-affinity/
 │   │   ├── run_interface_extraction.py   # CLI della pipeline Task 1
 │   │   ├── filter_dimers.py              # selezione dei complessi dimerici
 │   │   └── clean_task1.py                # pulizia delle cartelle di output
-│   ├── task2/    # (da popolare: mappatura Zernike)
+│   ├── task2/
+│   │   └── run_task2_parallel.py         # mappatura Zernike, eseguito su CINECA Leonardo
 │   ├── task3/    # (da popolare: piani di complementarità 2D)
 │   └── task4/    # (da popolare: training CNN)
 │
 ├── outputs/
-│   └── task1/
-│       ├── manifest.csv                  # esito dell'elaborazione per ogni complesso
-│       └── 00000_1KTZ/                   # esempio di output per un complesso
+│   ├── task1/
+│   │   ├── manifest.csv                  # esito dell'elaborazione per ogni complesso
+│   │   └── 00000_1KTZ/                   # esempio di output per un complesso
+│   └── task2/
+│       └── 00000_1KTZ/                   # esempio di output: score di complementarità Zernike
 │
 ├── figures/
 │   ├── interface_hist.pdf
-│   └── interface_hist.png
+│   ├── interface_hist.png
+│   └── interface_comparison_1ktz_2oza.png
 │
 └── report/
     ├── report.tex
@@ -77,7 +81,7 @@ ppb-affinity/
 ## Stato di avanzamento
 
 - [x] Task 1 — Interface Identification and Surface Patch Extraction
-- [ ] Task 2 — Zernike-Based Complementarity Mapping
+- [x] Task 2 — Zernike-Based Complementarity Mapping
 - [ ] Task 3 — Construction of 2D Complementarity Planes
 - [ ] Task 4 — CNN-Based Binding Affinity Prediction
 - [ ] Task 5 (opzionale) — Affinity Maturation / Docking Pose Discrimination

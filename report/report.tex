@@ -173,6 +173,15 @@ Punti superficie filtrata (interfaccia) -- recettore & 12\,875 \\
 
 I residui di interfaccia identificati sul lato ligando includono, tra gli altri, ARG25, LYS31, TRP32 e HIS34; sul lato recettore, LEU27, PHE30, ASP32 e SER49, coerentemente con quanto atteso per l'interfaccia TGF-beta / recettore. Ogni riga del file \texttt{*\_surface\_patch.csv} rappresenta un punto della superficie molecolare, con coordinate cartesiane (\texttt{x,y,z}), normale (\texttt{nx,ny,nz}), densità elettronica approssimata e riferimento al residuo di appartenenza -- formato pensato per essere direttamente compatibile con il successivo step di espansione in polinomi di Zernike (Task 2).
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{interface_comparison_1ktz_2oza.png}
+\caption{Visualizzazione 3D delle patch di superficie estratte per due complessi dimerici agli estremi opposti della distribuzione (assi in \r{A}; in blu i punti della patch del ligando, in arancione quelli della patch del recettore). \emph{Sinistra}: 1KTZ, l'interfaccia più piccola tra i dimeri selezionati (9 residui sul ligando, 13 sul recettore, 30 contatti residuo--residuo). \emph{Destra}: 2OZA, l'interfaccia più estesa (79 residui sul ligando, 70 sul recettore, 209 contatti).}
+\label{fig:interface-comparison}
+\end{figure}
+
+Il confronto tra i due pannelli è illustrativo delle differenze quantitative già riportate in Tabella~\ref{tab:1ktz} e nella Sezione~\ref{sec:results}. La patch di 1KTZ occupa un volume relativamente compatto (estensione massima di circa $28\times24\times19$~\r{A} tra ligando e recettore) ed è composta da circa $12\,500$--$12\,900$ punti di superficie per lato, coerentemente con un'interfaccia piccola (9 e 13 residui). La patch di 2OZA, al contrario, copre un'area sensibilmente più estesa e presenta $\sim$87\,700 punti sul ligando e $\sim$86\,400 sul recettore -- circa sette volte più densa -- riflettendo un'interfaccia con quasi otto volte più residui coinvolti (79 e 70) e una struttura complessiva di dimensioni maggiori (1493 atomi totali per 1KTZ contro 5440 per 2OZA). Questo conferma visivamente che il numero di punti di superficie prodotti dalla pipeline scala con l'estensione reale dell'interfaccia biologica, e non è un artefatto dei parametri di campionamento (fissi per tutti i complessi).
+
 \subsection{Statistiche aggregate sui complessi dimerici}
 La Tabella~\ref{tab:stats} riassume la distribuzione delle grandezze principali calcolate dalla pipeline sui 120 complessi dimerici selezionati per il progetto. Le dimensioni dell'interfaccia (numero di residui e di contatti) e delle patch di superficie variano in modo considerevole anche all'interno di questo sottoinsieme, riflettendo l'eterogeneità dei sistemi dimerici presenti nel benchmark.
 
