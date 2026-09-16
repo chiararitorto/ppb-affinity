@@ -3,10 +3,10 @@
 Progetto per il corso *Advanced Machine Learning for Physics* (Sapienza Università di Roma, A.A. 2025/2026).
 
 <!--
-Dopo aver creato il repository su GitHub, sostituisci <tuo-utente> nel link qui sotto con il tuo
+Dopo aver creato il repository su GitHub, sostituisci chiararitorto nel link qui sotto con il tuo
 username reale, così il badge apre direttamente il notebook in Google Colab.
 -->
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<tuo-utente>/ppb-affinity/blob/main/PPB_Affinity.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/chiararitorto/ppb-affinity/blob/main/PPB_Affinity.ipynb)
 
 ## Descrizione
 
@@ -22,7 +22,7 @@ Il report completo è in [`report/report.pdf`](report/report.pdf) (sorgente LaTe
   direttamente sui file caricati su GitHub — nessuna installazione locale necessaria.
 - **In locale:**
   ```bash
-  git clone https://github.com/<tuo-utente>/ppb-affinity.git
+  git clone https://github.com/chiararitorto/ppb-affinity.git
   cd ppb-affinity
   pip install -r requirements.txt
   jupyter notebook PPB_Affinity.ipynb
