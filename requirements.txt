@@ -1,5 +1,17 @@
+# Dipendenze per eseguire il notebook (PPB_Affinity.ipynb)
 pandas
 numpy
 matplotlib
 scipy
 openpyxl
+
+# Dipendenze aggiuntive necessarie solo per rilanciare gli script grezzi in scripts/
+# (non richieste per eseguire il solo notebook, che carica risultati già calcolati)
+scikit-learn      # Task 3: PCA in run_task3b.py; Task 4: KFold, train_test_split
+biopython         # Task 3: Bio.PDB in run_task3_lennard_jones.py
+seaborn           # Task 3: plot_lennard_jones_correlation.py
+statsmodels       # richiesto da seaborn.regplot(robust=True)
+zepyros           # Task 2: espansione Zernike 2D (github.com/matmi8/Zernike2D)
+torch             # Task 4: modello CNN (models.py, train_final.py)
+# Nota: Task 1 richiede inoltre un'installazione locale di UCSF ChimeraX (non un pacchetto pip),
+# e la Task 2 è stata eseguita su un cluster HPC (CINECA Leonardo).
