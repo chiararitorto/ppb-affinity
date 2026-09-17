@@ -14,7 +14,7 @@ Framework fisicamente motivato per la predizione dell'affinità di legame ($K_D$
 proteine, a partire dal dataset *PPB-Affinity / Affinity Benchmark v5.5*, tramite mappe 2D di complementarità
 (forma, elettrostatica, idrofobicità) usate come input di una CNN. Proposta di progetto: E. Milanetti, G. Ruocco.
 
-Il report completo è in [`report/report.pdf`](report/report.pdf) (sorgente Word in `report/report.docx`).
+Il report completo è in [`report/report.pdf`](report/report.pdf).
 
 ## Come eseguire
 
@@ -59,7 +59,7 @@ ppb-affinity/
 │   ├── task2/
 │   │   └── run_task2_parallel.py         # mappatura Zernike, eseguito su CINECA Leonardo
 │   ├── task3/
-│   │   ├── run_task3b.py                 # proiezione PCA sul piano medio di interfaccia
+│   │   ├── run_task3_projection.py       # proiezione PCA sul piano medio di interfaccia
 │   │   ├── run_task3_lennard_jones.py    # filtro energetico e correlazione con l'affinità
 │   │   ├── generate_interface_images.py  # costruzione dei tensori 2D (3x32x32)
 │   │   └── plot_lennard_jones_correlation.py
@@ -98,7 +98,6 @@ ppb-affinity/
 │   └── task4_oof_scatter.png
 │
 └── report/
-    ├── report.docx
     └── report.pdf
 ```
 
