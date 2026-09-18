@@ -33,7 +33,24 @@ from scipy.interpolate import griddata
 GRID_SIZE = 16
 BOX_MARGIN_ANGSTROM = 2.0  # margine attorno al bounding box dei punti campionati
 INPUT_DIR = "outputs/task1"
-OUTPUT_DIR = "/content/drive/MyDrive/ppb-affinity-voxel"
+
+# Se eseguito su Google Colab, monta Google Drive (se non gia' montato) e scrive i
+# tensori li', cosi' che sopravvivano a una disconnessione o a un reset completo del
+# runtime (che cancellerebbe tutto cio' che sta in /content). In locale (Mac) resta
+# invece nella cartella del progetto, come prima.
+try:
+    import google.colab  # esiste solo su Colab; solleva ImportError altrove
+    from google.colab import drive
+
+    DRIVE_MOUNT = "/content/drive"
+    if not os.path.exists(os.path.join(DRIVE_MOUNT, "MyDrive")):
+        drive.mount(DRIVE_MOUNT)
+    OUTPUT_DIR = os.path.join(DRIVE_MOUNT, "MyDrive", "ppb-affinity-task4dl", "voxel_maps")
+    print(f"Rilevato Google Colab: i tensori verranno salvati su Drive in {OUTPUT_DIR}")
+except ImportError:
+    OUTPUT_DIR = "outputs/task4_dl/voxel_maps"
+    print(f"Esecuzione locale: i tensori verranno salvati in {OUTPUT_DIR}")
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 HYDROPHOBICITY_SCALE = {
@@ -126,21 +143,34 @@ def main():
     print(f"Trovate {len(folders)} cartelle da voxelizzare.\n")
 
     n_ok = 0
+    n_skipped = 0
     for i, folder in enumerate(folders, 1):
         name = os.path.basename(folder)
+        output_path = os.path.join(OUTPUT_DIR, f"{name}_voxel.npy")
+
+        # Ripresa da interruzione: se il tensore esiste gia' (es. run precedente
+        # interrotta da una disconnessione di Colab), lo si salta senza ricalcolarlo.
+        if os.path.exists(output_path):
+            n_skipped += 1
+            continue
+
         try:
             tensor = voxelize_complex(folder)
             if tensor is None:
                 print(f"[{i}/{len(folders)}] Salto {name}: file mancanti o vuoti")
                 continue
-            np.save(os.path.join(OUTPUT_DIR, f"{name}_voxel.npy"), tensor)
+            np.save(output_path, tensor)
             n_ok += 1
-            if n_ok % 20 == 0 or i == len(folders):
-                print(f"[{i}/{len(folders)}] {n_ok} complessi voxelizzati con successo finora")
+            if n_ok % 5 == 0 or i == len(folders):
+                print(f"[{i}/{len(folders)}] {n_ok} nuovi voxelizzati "
+                      f"({n_skipped} gia' presenti, saltati)")
         except Exception as e:
             print(f"[{i}/{len(folders)}] Errore in {name}: {e}")
 
-    print(f"\nCompletato: {n_ok}/{len(folders)} complessi voxelizzati in {OUTPUT_DIR}")
+    if n_skipped > 0:
+        print(f"\n{n_skipped} complessi erano gia' presenti da un'esecuzione precedente "
+              f"(saltati senza ricalcolarli).")
+    print(f"Completato: {n_ok + n_skipped}/{len(folders)} complessi totali disponibili in {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":
