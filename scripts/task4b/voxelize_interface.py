@@ -33,7 +33,7 @@ from scipy.interpolate import griddata
 GRID_SIZE = 16
 BOX_MARGIN_ANGSTROM = 2.0  # margine attorno al bounding box dei punti campionati
 INPUT_DIR = "outputs/task1"
-OUTPUT_DIR = "outputs/task4_dl/voxel_maps"
+OUTPUT_DIR = "/content/drive/MyDrive/ppb-affinity-voxel"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 HYDROPHOBICITY_SCALE = {
