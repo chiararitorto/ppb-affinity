@@ -27,8 +27,26 @@ from scipy.stats import pearsonr, spearmanr
 from models_3d import ProteinInterfaceDataset3D, Interface3DCNN, compute_channel_stats_3d
 
 CSV_PATH = "data/affinity_dataset.csv"
-MAPS_DIR = "outputs/task4_dl/voxel_maps/"
-OUTPUT_DIR = "outputs/task4_dl/"
+
+# Stesso rilevamento automatico di voxelize_interface.py: su Colab legge i tensori e
+# scrive pesi/predizioni su Google Drive (sopravvive a disconnessioni/reset del
+# runtime); in locale resta nella cartella del progetto.
+try:
+    import google.colab
+    from google.colab import drive
+
+    DRIVE_MOUNT = "/content/drive"
+    if not os.path.exists(os.path.join(DRIVE_MOUNT, "MyDrive")):
+        drive.mount(DRIVE_MOUNT)
+    DRIVE_BASE = os.path.join(DRIVE_MOUNT, "MyDrive", "ppb-affinity-task4dl")
+    MAPS_DIR = os.path.join(DRIVE_BASE, "voxel_maps")
+    OUTPUT_DIR = os.path.join(DRIVE_BASE, "results")
+    print(f"Rilevato Google Colab: tensori letti da {MAPS_DIR}, risultati salvati in {OUTPUT_DIR}")
+except ImportError:
+    MAPS_DIR = "outputs/task4_dl/voxel_maps/"
+    OUTPUT_DIR = "outputs/task4_dl/"
+    print(f"Esecuzione locale: tensori letti da {MAPS_DIR}, risultati salvati in {OUTPUT_DIR}")
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Stessa esclusione della Task 4: 1NVU ha geometria (catena Q) e target sperimentale
@@ -70,6 +88,20 @@ def apply_geometry_augmentation_3d(batch_inputs):
 dataset = ProteinInterfaceDataset3D(csv_affinity_path=CSV_PATH, maps_dir=MAPS_DIR,
                                      excluded_pdb_ids=EXCLUDED_PDB_IDS)
 n_samples = len(dataset)
+
+# Controllo di sicurezza: se la voxelizzazione e' stata interrotta a meta' (es. Colab
+# disconnesso, cella fermata manualmente), il Dataset caricherebbe silenziosamente solo
+# i pochi complessi gia' voxelizzati, producendo un addestramento privo di significato.
+# Con 5 fold e uno split interno 85/15, servono almeno ~40 campioni per avere un minimo
+# di senso statistico; sotto quella soglia ci si ferma con un errore esplicito.
+MIN_SAMPLES_EXPECTED = 40
+if n_samples < MIN_SAMPLES_EXPECTED:
+    raise RuntimeError(
+        f"Solo {n_samples} complessi caricati (attesi ~116-118). "
+        f"Probabile voxelizzazione incompleta o interrotta: controlla che "
+        f"'python voxelize_interface.py' abbia stampato 'Completato: X/120' con X alto "
+        f"prima di rilanciare questo script."
+    )
 
 kf = KFold(n_splits=NUM_FOLDS, shuffle=True, random_state=OUTER_SEED)
 
