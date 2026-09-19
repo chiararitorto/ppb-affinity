@@ -2,10 +2,6 @@
 
 Progetto per il corso *Advanced Machine Learning for Physics* (Sapienza Università di Roma, A.A. 2025/2026).
 
-<!--
-Dopo aver creato il repository su GitHub, sostituisci chiararitorto nel link qui sotto con il tuo
-username reale, così il badge apre direttamente il notebook in Google Colab.
--->
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/chiararitorto/ppb-affinity/blob/main/PPB_Affinity.ipynb)
 
 ## Descrizione
@@ -63,11 +59,20 @@ ppb-affinity/
 │   │   ├── run_task3_lennard_jones.py    # filtro energetico e correlazione con l'affinità
 │   │   ├── generate_interface_images.py  # costruzione dei tensori 2D (3x32x32)
 │   │   └── plot_lennard_jones_correlation.py
-│   └── task4/
-│       ├── models.py              # ProteinInterfaceDataset (senza leakage) + InterfaceCNN
-│       ├── train_final.py         # training a due livelli: split interno per il checkpoint,
-│       │                          # standardizzazione Z-score calcolata solo sul training set del fold
-│       └── diagnose_dataset.py    # script diagnostico di integrità dati (esclusioni 1NVU/1UUG)
+│   ├── task4/
+│   │   ├── models.py              # ProteinInterfaceDataset (senza leakage) + InterfaceCNN
+│   │   ├── train_final.py         # training a due livelli: split interno per il checkpoint,
+│   │   │                          # standardizzazione Z-score calcolata solo sul training set del fold
+│   │   └── diagnose_dataset.py    # script diagnostico di integrità dati (esclusioni 1NVU/1UUG)
+│   └── task4b/                    # baseline di geometric deep learning (CNN 3D), per il confronto
+│       │                          # richiesto dalla traccia con la pipeline 2D principale
+│       ├── voxelize_interface.py  # converte le patch della Task 1 in tensori 3D a 4 canali
+│       │                          # (densita' ligando, densita' recettore, carica, idrofobicita'),
+│       │                          # senza passare dal matching Zernike ne' dalla proiezione PCA
+│       ├── models_3d.py           # ProteinInterfaceDataset3D (senza leakage) + Interface3DCNN
+│       └── train_3d.py            # stesso protocollo a due livelli di train_final.py, adattato
+│                                  # al modello 3D; su Colab legge/scrive automaticamente su
+│                                  # Google Drive per sopravvivere a disconnessioni del runtime
 │
 ├── outputs/
 │   ├── task1/
@@ -81,9 +86,14 @@ ppb-affinity/
 │   │   ├── final_correlation_plot.png             # correlazione score vs affinità sperimentale
 │   │   ├── projected_points/00000_1KTZ_projected.csv
 │   │   └── interface_maps/00000_1KTZ_tensor.npy   # tensore 3x32x32 di esempio
-│   └── task4_final/
-│       ├── cnn_final_fold_1.pth ... cnn_final_fold_5.pth   # pesi CNN, un fold ciascuno
-│       └── oof_predictions.csv                              # predizioni out-of-fold (116 complessi)
+│   ├── task4_final/
+│   │   ├── cnn_final_fold_1.pth ... cnn_final_fold_5.pth   # pesi CNN 2D, un fold ciascuno
+│   │   └── oof_predictions.csv                              # predizioni out-of-fold (116 complessi)
+│   └── task4_dl/                  # risultati della baseline geometric DL (Task 4b, CNN 3D)
+│       ├── voxel_maps/00000_1KTZ_voxel.npy         # tensore 4x16x16x16 di esempio
+│       └── results/
+│           ├── cnn3d_fold_1.pth ... cnn3d_fold_5.pth   # pesi CNN 3D, un fold ciascuno
+│           └── oof_predictions_3d.csv                   # predizioni out-of-fold (118 complessi)
 │
 ├── figures/
 │   ├── interface_hist.pdf
@@ -95,7 +105,9 @@ ppb-affinity/
 │   ├── task3_tensor_preview_1ktz.png
 │   ├── task3_examples_grid.png
 │   ├── final_correlation_plot.png
-│   └── task4_oof_scatter.png
+│   ├── task4_oof_scatter.png
+│   ├── task4b_oof_scatter_3d.png          # predizioni OOF della CNN 3D
+│   └── task4_vs_task4b_comparison.png     # confronto affiancato CNN 2D vs CNN 3D
 │
 └── report/
     └── report.pdf
@@ -107,4 +119,5 @@ ppb-affinity/
 - [x] Task 2 — Zernike-Based Complementarity Mapping (118/120 complessi completati)
 - [x] Task 3 — Construction of 2D Complementarity Planes
 - [x] Task 4 — CNN-Based Binding Affinity Prediction (116/118 complessi: 2 esclusi per controllo di integrità dati; risultato finale R=0.42, R²≈18%, p<10⁻⁵)
+- [x] Task 4b — Baseline di geometric deep learning (CNN 3D end-to-end su voxel grezzi, senza Zernike né proiezione PCA): 118 complessi, R=0.46, R²≈22%, p<10⁻⁶ — comparabile o leggermente superiore alla pipeline 2D principale, pur partendo da dati grezzi non pre-elaborati
 - [ ] Task 5 (opzionale) — Affinity Maturation / Docking Pose Discrimination
