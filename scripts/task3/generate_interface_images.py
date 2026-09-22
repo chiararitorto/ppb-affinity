@@ -11,9 +11,12 @@
 # 1. Carica le coordinate bidimensionali proiettate sul piano medio della PCA (PC1, PC2)
 #    generate nel Task 3b, unitamente al profilo geometrico dell'interfaccia.
 # 2. Carica i file dei residui d'interfaccia (receptor/ligand_interface_residues.csv).
-# 3. Mappatura Chimica Corretta: Lo script identifica la sorgente del punto (ligand/receptor)
-#    e vi associa sequenzialmente gli amminoacidi reali estratti dalla colonna 'residue_name',
-#    prevenendo bias o fallback sistematici su singoli residui neutri (es. GLY o ALA).
+# 3. Assegnazione Chimica per Interleaving: Lo script identifica la sorgente del punto
+#    (ligand/receptor) e vi associa ciclicamente gli amminoacidi reali estratti dalla
+#    colonna 'residue_name' del complesso, evitando fallback sistematici su singoli
+#    residui neutri (es. GLY o ALA). Non è una vera mappatura spaziale punto-residuo:
+#    un punto riceve il residuo che gli tocca nel ciclo, non necessariamente quello
+#    più vicino nello spazio.
 # 4. Assegnazione delle Proprietà Biofisiche: L'amminoacido viene convertito in valori
 #    continui usando scale strutturate e standardizzate:
 #    - Carica Elettrostatica: Scala formale netta a pH fisiologico (7.4).
