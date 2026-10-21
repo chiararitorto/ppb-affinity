@@ -1,0 +1,547 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{caption}
+\geometry{margin=2.5cm}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    frame=single,
+    language=Python,
+    columns=fullflexible,
+    keywordstyle=\color{blue!70!black},
+    commentstyle=\color{gray},
+    stringstyle=\color{orange!70!black}
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    citecolor=blue!50!black
+}
+
+\title{\Large Advanced Machine Learning for Physics A.A. 2025/2026\\[4pt]
+\LARGE Mapping physicochemical features onto 2D interface planes\\
+for protein--protein binding affinity prediction\\[4pt]
+\large Report di progetto -- Documentazione tecnica della pipeline (Task 1--4)}
+\author{Chiara Ritorto e Gianmarco Picchianti}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Questo report descrive il lavoro svolto nell'ambito del progetto proposto da E. Milanetti e G. Ruocco per il corso Advanced Machine Learning for Physics, finalizzato alla predizione dell'affinità di legame proteina--proteina a partire da mappe 2D di complementarità costruite tramite espansione in polinomi di Zernike, usate come input di una rete neurale convoluzionale (CNN). I risultati di questa pipeline sono confrontati con una seconda architettura, una CNN 3D che elabora direttamente le geometrie grezze delle interfacce senza passare dal descrittore di Zernike, a soddisfare il confronto con un modello di geometric deep learning richiesto dalla traccia.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduzione}
+L'obiettivo generale del progetto è costruire un framework fisicamente motivato per la predizione dell'affinità di legame (K$_D$ o $\Delta G$) tra coppie di proteine, rappresentando l'interfaccia di legame come una mappa 2D multi-canale (complementarità geometrica, potenziale elettrostatico, idrofobicità) da utilizzare come input per una rete neurale convoluzionale (CNN).
+
+\section{Dataset}
+Il dataset di partenza è l'\emph{Affinity Benchmark v5.5}, fornito in formato Excel/CSV, contenente per ciascun complesso proteina--proteina:
+\begin{itemize}
+    \item l'identificativo PDB della struttura cristallografica;
+    \item le catene appartenenti al \emph{ligand} e al \emph{receptor};
+    \item il nome delle due proteine coinvolte;
+    \item la costante di dissociazione K$_D$ (in M);
+    \item metadati sperimentali (metodo di risoluzione strutturale, risoluzione in \r{A}, temperatura, riferimenti bibliografici/PubMed).
+\end{itemize}
+Il file utilizzato conta 207 complessi. A titolo di esempio, la prima riga del dataset descrive il complesso \texttt{1KTZ} (TGF-beta / TGF-beta receptor, catena ligando A, catena recettore B, K$_D = 2.9\times10^{-7}$~M, risolto per diffrazione a raggi X a 2.15~\r{A}).
+
+\section{Task 1 -- Architettura della pipeline}
+\label{sec:task1}
+La Task 1, propedeutica a tutte le fasi successive, consiste nell'identificazione delle interfacce di legame a partire da un dataset di complessi proteina--proteina e nell'estrazione delle rispettive patch di superficie molecolare. Il codice, così come organizzato nel repository del progetto, è diviso in un package di moduli riutilizzabili (\texttt{src/}) e uno script a riga di comando che li orchestra (\texttt{scripts/task1/run\_interface\_extraction.py}):
+
+\begin{itemize}
+    \item \texttt{src/dataset.py} -- lettura del dataset e costruzione dei record dei complessi;
+    \item \texttt{src/pdb.py} -- parsing/scrittura di file PDB e download automatico da RCSB;
+    \item \texttt{src/interface.py} -- identificazione dei residui di interfaccia tramite distanze atomiche;
+    \item \texttt{src/surface.py} -- generazione della superficie molecolare "sampler" con densità elettronica approssimata;
+    \item \texttt{src/chimerax.py} -- generazione della superficie molecolare tramite ChimeraX (superficie escludente il solvente) e suo filtraggio sui residui di interfaccia;
+    \item \texttt{src/pipeline.py} -- orchestrazione dell'intero flusso per ciascun record del dataset;
+    \item \texttt{scripts/task1/run\_interface\_extraction.py} -- interfaccia a riga di comando per l'esecuzione della pipeline (importa i moduli da \texttt{src/}).
+\end{itemize}
+
+Il flusso complessivo, per ciascun complesso del dataset, è il seguente:
+\begin{enumerate}
+    \item lettura del record (PDB ID, catene ligando/recettore, K$_D$) da \texttt{src/dataset.py};
+    \item recupero della struttura 3D (file locale o download da RCSB) e parsing degli atomi;
+    \item separazione degli atomi in catene ligando e catene recettore;
+    \item identificazione dei residui di interfaccia tramite cutoff di distanza atomica;
+    \item estrazione degli atomi appartenenti ai residui di interfaccia (patch);
+    \item generazione della superficie molecolare e annotazione con densità elettronica approssimata;
+    \item scrittura degli output (strutture, residui di interfaccia, superfici, metadati) per il complesso.
+\end{enumerate}
+
+\subsection{Lettura del dataset}
+Il modulo \texttt{src/dataset.py} legge il file Excel del benchmark e costruisce, per ogni riga valida, un oggetto \texttt{ComplexRecord} contenente PDB ID, catene di ligando e recettore, K$_D$ e metadati testuali. 
+% Sono previsti filtri opzionali per limitare l'elaborazione a un sottoinsieme di PDB ID, a un intervallo di righe, o ai soli complessi \emph{dimerici} (una sola catena per lato).
+
+\subsection{Parsing delle strutture e download}
+Il modulo \texttt{src/pdb.py} implementa un parser leggero del formato PDB a colonne fisse, che estrae per ciascun atomo posizione, elemento chimico, catena, numero e nome di residuo, scartando le molecole d'acqua e gestendo gli \emph{altloc}. Le strutture mancanti localmente vengono scaricate automaticamente da RCSB (\url{https://files.rcsb.org}). Sono inoltre presenti funzioni di selezione delle catene di interesse e di scrittura di sottoinsiemi di atomi in nuovi file PDB, utilizzate per isolare ligando, recettore e le rispettive patch di interfaccia.
+
+\subsection{Identificazione dell'interfaccia}
+\label{sec:interface}
+L'interfaccia di legame viene identificata in \texttt{src/interface.py} calcolando, per ogni coppia di atomi pesanti (ligando, recettore), la distanza euclidea e trattenendo i contatti con distanza inferiore a un cutoff (di default \textbf{5.0~\r{A}}). Il calcolo è vettorizzato tramite \texttt{numpy}, processando gli atomi del ligando a blocchi (\emph{chunk}) per limitare l'uso di memoria sulle matrici di distanza. Per ciascuna coppia di residui in contatto vengono registrati la distanza minima e il numero di contatti atomici, mentre l'insieme complessivo dei residui di interfaccia (lato ligando e lato recettore) viene restituito come due insiemi separati.
+
+\subsection{Estrazione delle patch e generazione della superficie}
+Una volta identificati i residui di interfaccia, gli atomi corrispondenti vengono estratti (\texttt{atoms\_in\_residues}) e scritti in file PDB dedicati (catene complete e patch di interfaccia, separatamente per ligando e recettore).
+
+La superficie molecolare può essere generata con due backend alternativi, selezionabili da riga di comando:
+
+\begin{description}
+    \item[\textbf{Sampler} (\texttt{src/surface.py})] -- per ogni atomo della patch viene generato un set deterministico di punti sulla sfera (distribuzione di Fibonacci, di default 64 campioni per atomo) a distanza raggio di van der Waals + raggio della sonda (probe radius, default 1.4~\r{A}, valore tipico dell'acqua). I punti "sepolti" da altri atomi dello stesso partner vengono scartati tramite un test di occlusione basato sui raggi atomici. I punti rimanenti sono annotati con una densità elettronica approssimata, calcolata come somma di contributi gaussiani pesati per numero di elettroni degli atomi vicini entro un raggio di cutoff (default 6.0~\r{A}), con decadimento controllato da un parametro $\alpha$ (default 1.8).
+    \item[\textbf{ChimeraX} (\texttt{src/chimerax.py})] -- la superficie viene generata invocando ChimeraX in modalità \emph{headless} (\texttt{--nogui}) sul comando \texttt{surface}, che calcola una superficie escludente il solvente (\emph{solvent-excluded surface}) sull'intera catena, esportata in formato OBJ. I vertici OBJ vengono poi associati al residuo più vicino e annotati con la stessa densità elettronica approssimata usata nel backend sampler. La strategia adottata di default (\texttt{full\_chain\_then\_filter}) calcola la superficie sull'intera catena e la filtra successivamente sui soli residui di interfaccia, per evitare artefatti di bordo che si avrebbero calcolando la superficie direttamente sulla patch isolata; è comunque disponibile una modalità alternativa (\texttt{interface\_patch\_legacy} nel codice) che opera direttamente sulla patch.
+\end{description}
+
+Il backend di default nella pipeline è ChimeraX con filtraggio "full-chain-then-filter".
+
+\subsection{Orchestrazione e output}
+Il modulo \texttt{src/pipeline.py} coordina l'intero processo per ciascun record del dataset, gestendo anche il fallimento silenzioso di singoli complessi (ad es.\ struttura mancante o catene non trovate), che vengono registrati come errori senza interrompere l'elaborazione del batch. Per ogni complesso elaborato con successo viene creata una sottocartella \texttt{outputs/task1/\{indice\}\_\{PDB\_ID\}/} contenente:
+
+\begin{itemize}
+    \item \texttt{ligand\_chains.pdb}, \texttt{receptor\_chains.pdb} -- catene complete;
+    \item \texttt{ligand\_interface\_patch.pdb}, \texttt{receptor\_interface\_patch.pdb} -- patch di interfaccia;
+    \item \texttt{ligand\_interface\_residues.csv}, \texttt{receptor\_interface\_residues.csv} -- elenco dei residui di interfaccia (catena, numero, codice di inserzione, nome residuo);
+    \item \texttt{interface\_contacts.csv} -- contatti residuo--residuo con distanza minima e numero di contatti atomici;
+    \item \texttt{ligand\_surface\_patch.csv}, \texttt{receptor\_surface\_patch.csv} -- superficie molecolare annotata (coordinate, normali, densità, residuo di appartenenza);
+    \item \texttt{metadata.json} -- parametri usati, conteggi di atomi/residui/punti di superficie ed esito dell'elaborazione.
+\end{itemize}
+
+Al termine dell'esecuzione viene inoltre prodotto un \texttt{manifest.csv} riassuntivo con lo stato (\emph{ok}/\emph{error}) di ciascun complesso processato. L'intera pipeline è esposta tramite CLI (\texttt{scripts/} \texttt{task1/run\_interface\_extraction.py}), con parametri configurabili per cutoff di interfaccia, backend di superficie, numero di campioni per atomo, raggio della sonda e parametri del modello di densità.
+
+\section{Post-elaborazione: selezione dei dimeri e pulizia degli output}
+\label{sec:postproc}
+Poiché il progetto si concentra su interfacce a due sole catene (un ligando e un recettore), l'insieme dei complessi processati dalla pipeline è stato in seguito ristretto ai soli casi \textbf{dimerici} tramite due script di post-elaborazione, eseguiti successivamente alla Task 1 vera e propria.
+
+\subsection{Selezione dei dimeri (\texttt{scripts/task1/filter\_dimers.py})}
+Lo script legge nuovamente il file Excel del benchmark e individua i complessi dimerici imponendo che sia la colonna \texttt{Ligand Chains} sia la colonna \texttt{Receptor Chains} contengano un singolo carattere (una sola catena per lato, senza elenchi separati da virgole). Per ciascun PDB ID identificato come dimero, la cartella corrispondente viene cercata in \texttt{outputs/all} (l'output completo della pipeline su tutto il dataset) e copiata in \texttt{outputs/task1}, che diventa così la directory di lavoro contenente esclusivamente i complessi dimerici.
+
+\paragraph{Nota: 121 righe, 120 cartelle.} Applicando il criterio di selezione al dataset si ottengono 121 righe che soddisfano la condizione di dimericità, ma solo 120 cartelle distinte in \texttt{outputs/task1}. La discrepanza è dovuta al complesso \texttt{1NVU}, che compare due volte nel benchmark come due varianti puntiformi dello stesso complesso strutturale (catena ligando \texttt{Q} in una riga, \texttt{R} nell'altra, entrambe accoppiate alla stessa catena recettore \texttt{S}, con costanti di dissociazione sperimentali diverse: $K_D = 3.6\times10^{-6}$~M e $1.9\times10^{-6}$~M rispettivamente). Poiché la pipeline della Task 1 indicizza l'output per PDB ID e non per riga del dataset, le due esecuzioni scrivono nella stessa cartella \texttt{outputs/task1/.../1NVU}, e la seconda sovrascrive la prima: il numero di cartelle fisiche su disco (120) è quindi quello corretto da usare come riferimento per il conteggio dei complessi effettivamente disponibili per le fasi successive del progetto.
+
+\subsection{Pulizia delle cartelle (\texttt{scripts/task1/clean\_task1.py})}
+Una volta popolata \texttt{outputs/task1} con i soli dimeri, un secondo script rimuove da ciascuna sottocartella tutti i file non essenziali alle fasi successive del progetto, mantenendo esclusivamente:
+\begin{itemize}
+    \item \texttt{ligand\_surface\_patch.csv}, \texttt{receptor\_surface\_patch.csv} -- superfici di interfaccia annotate;
+    \item \texttt{ligand\_interface\_residues.csv}, \texttt{receptor\_interface\_residues.csv} -- elenco dei residui di interfaccia;
+    \item \texttt{metadata.json} -- parametri e conteggi dell'elaborazione.
+\end{itemize}
+File intermedi come le strutture PDB delle catene complete, le patch in formato PDB, i file OBJ di ChimeraX e i contatti residuo--residuo vengono eliminati, riducendo lo spazio occupato e mantenendo in \texttt{outputs/task1} solo gli artefatti necessari come input per la Task 2 (mappatura Zernike).
+
+\section{Risultati dell'esecuzione completa}
+\label{sec:results}
+
+Il dataset di partenza (207 complessi) è stato elaborato interamente dalla pipeline di Task 1, ma il progetto si concentra esclusivamente sui \textbf{complessi dimerici} (una sola catena per ligando e una per recettore), selezionati con lo script \texttt{scripts/task1/filter\_dimers.py} descritto in Sezione~\ref{sec:postproc}: applicando questo criterio si ottengono \textbf{120 complessi dimerici}, tutti elaborati con successo dalla pipeline (nessun errore di download, parsing o calcolo della superficie). Le statistiche riportate di seguito si riferiscono esclusivamente a questo sottoinsieme.
+
+\subsection{Esempio: complesso 1KTZ}
+A titolo illustrativo, la Tabella~\ref{tab:1ktz} riporta i conteggi prodotti dalla pipeline per il complesso \texttt{1KTZ} (TGF-beta / TGF-beta receptor, catena ligando A, catena recettore B) -- uno dei dimeri del sottoinsieme -- con cutoff di interfaccia a 5.0~\r{A} e backend ChimeraX (\texttt{full\_chain\_then\_filter}).
+
+\begin{table}[h]
+\centering
+\caption{Conteggi della Task 1 per il complesso 1KTZ.}
+\label{tab:1ktz}
+\begin{tabular}{lr}
+\toprule
+Grandezza & Valore \\
+\midrule
+Atomi totali & 1493 \\
+Atomi ligando (catena A) & 653 \\
+Atomi recettore (catena B) & 840 \\
+Residui di interfaccia -- ligando & 9 \\
+Residui di interfaccia -- recettore & 13 \\
+Contatti residuo--residuo & 30 \\
+Atomi patch ligando & 90 \\
+Atomi patch recettore & 101 \\
+Punti superficie completa -- ligando & 84\,247 \\
+Punti superficie completa -- recettore & 98\,215 \\
+Punti superficie filtrata (interfaccia) -- ligando & 12\,528 \\
+Punti superficie filtrata (interfaccia) -- recettore & 12\,875 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+I residui di interfaccia identificati sul lato ligando includono, tra gli altri, ARG25, LYS31, TRP32 e HIS34; sul lato recettore, LEU27, PHE30, ASP32 e SER49, coerentemente con quanto atteso per l'interfaccia TGF-beta / recettore. Ogni riga del file \texttt{*\_surface\_patch.csv} rappresenta un punto della superficie molecolare, con coordinate cartesiane (\texttt{x,y,z}), normale (\texttt{nx,ny,nz}), densità elettronica approssimata e riferimento al residuo di appartenenza -- formato pensato per essere direttamente compatibile con il successivo step di espansione in polinomi di Zernike (Task 2).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{interface_comparison_1ktz_2oza.png}
+\caption{Visualizzazione 3D delle patch di superficie estratte per due complessi dimerici agli estremi opposti della distribuzione (assi in \r{A}; in blu i punti della patch del ligando, in arancione quelli della patch del recettore). \emph{Sinistra}: 1KTZ, l'interfaccia più piccola tra i dimeri selezionati (9 residui sul ligando, 13 sul recettore, 30 contatti residuo--residuo). \emph{Destra}: 2OZA, l'interfaccia più estesa (79 residui sul ligando, 70 sul recettore, 209 contatti).}
+\label{fig:interface-comparison}
+\end{figure}
+
+Il confronto tra i due pannelli (Fig.~\ref{fig:interface-comparison}) è illustrativo delle differenze quantitative già riportate in Tabella~\ref{tab:1ktz} e nella Sezione~\ref{sec:results}. La patch di 1KTZ occupa un volume relativamente compatto (estensione massima di circa $28\times24\times19$~\r{A} tra ligando e recettore) ed è composta da circa $12\,500$--$12\,900$ punti di superficie per lato, coerentemente con un'interfaccia piccola (9 e 13 residui). La patch di 2OZA, al contrario, copre un'area sensibilmente più estesa e presenta $\sim$87\,700 punti sul ligando e $\sim$86\,400 sul recettore -- circa sette volte più densa -- riflettendo un'interfaccia con quasi otto volte più residui coinvolti (79 e 70) e una struttura complessiva di dimensioni maggiori (1493 atomi totali per 1KTZ contro 5440 per 2OZA). Questo conferma visivamente che il numero di punti di superficie prodotti dalla pipeline scala con l'estensione reale dell'interfaccia biologica, e non è un artefatto dei parametri di campionamento (fissi per tutti i complessi).
+
+\subsection{Statistiche aggregate sui complessi dimerici}
+La Tabella~\ref{tab:stats} riassume la distribuzione delle grandezze principali calcolate dalla pipeline sui 120 complessi dimerici selezionati per il progetto. Le dimensioni dell'interfaccia (numero di residui e di contatti) e delle patch di superficie variano in modo considerevole anche all'interno di questo sottoinsieme, riflettendo l'eterogeneità dei sistemi dimerici presenti nel benchmark.
+
+\begin{table}[h]
+\centering
+\caption{Statistiche descrittive sui complessi dimerici selezionati per il progetto.}
+\label{tab:stats}
+\begin{tabular}{lrrrrr}
+\toprule
+Grandezza & Media & Dev.\ std. & Minimo & Mediana & Massimo \\
+\midrule
+Atomi totali & 5268 & 3948 & 924 & 4370 & 24\,125 \\
+Residui interfaccia -- ligando & 25.2 & 9.7 & 9 & 24 & 79 \\
+Residui interfaccia -- recettore & 22.7 & 9.7 & 10 & 21 & 70 \\
+Contatti residuo--residuo & 62.7 & 24.0 & 27 & 61 & 209 \\
+Atomi patch -- ligando & 205.7 & 77.1 & 75 & 200 & 639 \\
+Atomi patch -- recettore & 185.1 & 79.9 & 69 & 169 & 579 \\
+Punti superficie (interfaccia) -- ligando & 32\,894 & 19\,572 & 10\,754 & 26\,551 & 109\,741 \\
+Punti superficie (interfaccia) -- recettore & 27\,298 & 14\,236 & 12\,323 & 23\,162 & 99\,169 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Lettura dei risultati.} Un'interfaccia tipica nel sottoinsieme coinvolge circa 20--25 residui per lato e $\sim$60 contatti residuo--residuo; la vicinanza tra media e mediana per tutte le grandezze indica distribuzioni ragionevolmente simmetriche. Il range è tuttavia ampio: il numero di residui di interfaccia varia da un minimo di 9 (ligando, complesso 1KTZ) fino a un massimo di 79 (ligando, complesso 2OZA), quasi un fattore 9 tra il caso più piccolo e il più grande del sottoinsieme. Il coefficiente di variazione (rapporto tra deviazione standard e media) è intorno al 35--40\% per la maggior parte delle grandezze, a indicare una dispersione elevata rispetto al valore medio: il "complesso dimerico medio" è quindi un'astrazione poco rappresentativa, e il dataset copre sistemi biologicamente eterogenei (presumibilmente dai piccoli complessi enzima--inibitore alle interfacce estese di tipo anticorpo--antigene, coerentemente con l'ambito applicativo descritto nella proposta di progetto).
+
+Le grandezze scalano in modo internamente coerente: interfacce con più residui producono più atomi nella patch e, di conseguenza, più punti di superficie campionati, senza valori anomali che suggeriscano errori sistematici della pipeline (si veda anche il confronto diretto tra 1KTZ e 2OZA in Figura~\ref{fig:interface-comparison}). Il rapporto tra punti di superficie e atomi della patch resta relativamente stabile tra i complessi, come atteso dato il numero fisso di campioni per atomo usato dal backend ChimeraX.
+
+È inoltre utile notare che la dimensione complessiva del complesso (\texttt{all\_atoms}) e la dimensione della sua interfaccia non sono strettamente correlate: 2OZA, pur avendo l'interfaccia più estesa del sottoinsieme, conta solo 5440 atomi totali, un valore vicino alla media, mentre il complesso più grande in assoluto (24\,125 atomi) ha verosimilmente un'interfaccia proporzionalmente più contenuta rispetto alle sue dimensioni globali. Questo è rilevante per le fasi successive del progetto: la CNN della Task 4 riceve in input solo la patch locale di interfaccia (Task 3), non informazioni sulla proteina nel suo complesso, per cui la sua capacità predittiva dipende dalla geometria locale del sito di legame e non dalla dimensione della struttura ospite.
+
+Infine, questa eterogeneità -- combinata con la dimensione ridotta del campione (120 complessi) -- è una delle cause plausibili della moderata capacità di generalizzazione osservata nei risultati della CNN (Sezione~\ref{sec:task4}, $R \approx 0.42$): un dataset piccolo e disomogeneo nella forma delle interfacce rende più difficile per il modello apprendere pattern geometrici stabili e generalizzabili.
+
+La Figura~\ref{fig:hist} mostra la distribuzione del numero di residui di interfaccia (per ligando e recettore) e del numero di contatti residuo--residuo sui complessi dimerici: la maggior parte delle interfacce coinvolge tra 15 e 35 residui per lato, con una coda di complessi ad interfaccia estesa (fino a $\sim$80 residui), coerente con la varietà di sistemi anticorpo--antigene ed enzima--inibitore presenti nel sottoinsieme.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{interface_hist.pdf}
+\caption{Distribuzione del numero di residui di interfaccia (sinistra) e del numero di contatti residuo--residuo (destra) sui complessi dimerici selezionati.}
+\label{fig:hist}
+\end{figure}
+
+\section{Task 2 -- Mappatura della complementarità tramite descrittori di Zernike}
+\label{sec:task2}
+ 
+Questa sezione è basata sulla lettura diretta dello script di produzione \texttt{run\_task2\_parallel.py}.
+ 
+\subsection{Nota metodologica: espansione 2D}
+\label{sec:task2-2d3d}
+La funzione utilizzata, \texttt{zepyros.get\_zernike(coords, radius, center\_index, order, verso)}, calcola il descrittore sulla patch di punti compresa entro un raggio fissato (\texttt{RADIUS = 6.0}~\r{A}) attorno a un singolo punto della superficie -- non un vettore globale a dimensione fissa per l'intera proteina isolata. Il pacchetto \texttt{zepyros} (\emph{ZErnike Polynomials analYsis of pROtein Shapes}) è stato sviluppato dallo stesso gruppo autore della proposta di progetto come motore di calcolo per il metodo descritto in Milanetti et al.~\cite{milanetti2021zernike2d} e nel webserver Zepyros \cite{miotto2025zepyros}, entrambi basati esplicitamente su un'espansione in \textbf{polinomi di Zernike 2D} di patch di superficie locali. La scelta implementativa di questo progetto è dunque pienamente coerente con quanto richiesto dalla traccia (Task 2: \emph{"Expand patches in 2D Zernike polynomials"}), senza scostamenti metodologici da dichiarare.
+ 
+\subsection{Algoritmo implementato}
+Per ciascun complesso, a partire dalle patch di superficie prodotte dalla Task 1 (\texttt{ligand\_surface\_patch.csv}, \texttt{receptor\_surface\_patch.csv}):
+\begin{enumerate}
+    \item i punti vengono sottocampionati con passo \texttt{STRIDE = 20} (indici \texttt{0, 20, 40, \dots});
+    \item per ciascun punto campionato del ligando si calcola il descrittore di Zernike locale (ordine \texttt{ORDER = 20}, raggio 6.0~\r{A}), con orientazione \texttt{verso = +1}; per ciascun punto campionato del recettore, lo stesso con \texttt{verso = -1} (per mappare la corrispondenza concavità/convessità tra le due superfici);
+    \item si costruisce la matrice delle distanze euclidee \emph{tra tutti} i descrittori del ligando e \emph{tutti} i descrittori del recettore (\texttt{scipy.spatial.distance.cdist}) -- si tratta quindi di un matching \textbf{globale nello spazio dei descrittori di forma}, non di un confronto ristretto alla coppia spazialmente più vicina;
+    \item per ogni punto del ligando si trattiene la distanza minima rispetto a tutti i punti del recettore (e viceversa per il recettore), definendo lo score $\text{complementarity\_score} = -\min(\text{distanza})$: valori meno negativi indicano maggiore complementarità di forma;
+    \item i due versi (ligando$\to$recettore e recettore$\to$ligando) vengono uniti in un unico file, in modo che lo score complessivo non dipenda da quale dei due partner sia stato usato come riferimento.
+\end{enumerate}
+
+L'output per complesso è \texttt{outputs/task2/\{cartella\}/zernike\_complementarity\_symmetric.csv}, con colonne \texttt{source} (ligand/receptor), \texttt{center\_index}, coordinate \texttt{x,y,z} del centro, \texttt{zernike\_distance} e \texttt{complementarity\_score}. Nell'esempio del complesso 1KTZ, lo stride 20 applicato a 12\,528 punti di superficie del ligando e 12\,875 del recettore (Task 1) produce 627 centri campionati sul ligando e 644 sul recettore (1271 righe totali nel file di output), con punteggio di complementarità compreso nell'intervallo $[-3.73, -0.39]$.
+ 
+Le Figure~\ref{fig:task2-hist} e~\ref{fig:task2-scatter3d} riportano le stesse visualizzazioni generate nel notebook del progetto (Sezione 3, \texttt{PPB\_Affinity.ipynb}). L'istogramma conferma che la distribuzione dello score non è patologica (nessun valore anomalo isolato, code contenute), mentre la visualizzazione spaziale mostra che i punti a complementarità più alta non sono distribuiti uniformemente sull'interfaccia ma si concentrano in specifiche regioni di contatto -- coerentemente con l'aspettativa biologica che il legame sia guidato da un sottoinsieme di residui chiave piuttosto che dall'intera superficie di interfaccia in modo omogeneo.
+ \begin{figure}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{task2_score_histogram.png}
+\caption{Distribuzione dello score di complementarità $-\min(\text{distanza Zernike})$ sui punti campionati del complesso 1KTZ, separatamente per ligando (627 punti) e recettore (644 punti). Le due distribuzioni sono centrate in modo simile (media $-1.26$ per il ligando, $-1.10$ per il recettore), con code verso valori più negativi (minore complementarità) leggermente più marcate sul lato ligando.}
+\label{fig:task2-hist}
+\end{figure}
+ 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.72\textwidth]{task2_score_scatter3d.png}
+\caption{Posizione spaziale dei punti campionati per il complesso 1KTZ (ligando e recettore uniti), colorati in base al relativo score di complementarità (scala \emph{viridis}: giallo = maggiore complementarità, viola = minore). La mappa evidenzia le zone dell'interfaccia in cui la forma locale delle due superfici combacia meglio secondo il criterio di Zernike, informazione che alimenta direttamente il canale di \emph{shape complementarity} della Task 3.}
+\label{fig:task2-scatter3d}
+\end{figure}
+
+\subsection{Esecuzione su HPC: perché il costo è stato elevato}
+\label{sec:task2-hpc-cost}
+Il calcolo è stato eseguito su CINECA Leonardo con parallelizzazione a livello di complesso (\texttt{multiprocessing.Pool}, un processo per complesso), con il numero di processi sincronizzato al numero di core assegnati dallo scheduler (\texttt{SLURM\_CPUS\_PER\_TASK}, di default 48 nello script).
+ 
+Il consumo elevato è spiegabile con il concorso di due fattori, entrambi identificabili dalla struttura del codice:
+ 
+\begin{enumerate}
+    \item \textbf{Costo computazionale intrinseco.} Per ciascun complesso, il matching di Zernike confronta \emph{tutti} i descrittori campionati sul ligando con \emph{tutti} quelli del recettore (\texttt{cdist}), un costo $O(n_{\text{lig}} \times n_{\text{rec}})$ nel numero di punti campionati. Poiché la dimensione delle interfacce nel dataset varia di quasi un fattore 9 (da 9 a 79 residui, si veda la Sezione~\ref{sec:results}), anche il numero di punti campionati -- e quindi il numero di confronti da eseguire -- varia in proporzione da un complesso all'altro: i dimeri con interfaccia più estesa richiedono un tempo di calcolo sensibilmente maggiore di quelli con interfaccia piccola come 1KTZ.
+    \item \textbf{Squilibrio di carico nella parallelizzazione.} La parallelizzazione è a grana grossa: un processo per complesso, senza suddivisione ulteriore del lavoro interno a un singolo complesso e senza bilanciamento dinamico del carico tra i processi. Questo significa che, se lo scheduler riserva un nodo con un numero fisso di core per l'intera durata del job, quel nodo resta occupato (e viene fatturato) fino a quando anche il processo più lento -- tipicamente il complesso con l'interfaccia più estesa -- non ha terminato, anche se la maggior parte degli altri processi ha già concluso da tempo.
+\end{enumerate}
+ 
+A questi due fattori strutturali si è aggiunto un elemento pratico: un primo tentativo di esecuzione non ha completato il calcolo entro il limite di tempo richiesto alla coda Slurm ed è stato rilanciato con un tempo massimo maggiore. Lo script verifica, all'inizio dell'elaborazione di ciascun complesso, se il file di output esiste già (\texttt{if output\_file.exists(): return}) e in tal caso lo salta: questo evita di ricalcolare i complessi già completati con successo nel tentativo precedente, ma non restituisce le ore già consumate dal tentativo interrotto, che restano comunque addebitate al budget del progetto. La combinazione di questi fattori -- costo computazionale intrinsecamente variabile, squilibrio di carico tra processi paralleli di durata molto diversa, e un tentativo iniziale non andato a buon fine -- rende plausibile un consumo complessivo dell'ordine delle migliaia di core-hours per processare l'intero insieme di 120 complessi dimerici.
+ 
+\paragraph{Esito finale.} Anche dopo l'ultimo rilancio, \textbf{2 complessi su 120 non hanno completato il calcolo} (\texttt{2PCC} e \texttt{1EWY}: le rispettive cartelle di output esistono ma sono vuote). Il numero di complessi effettivamente disponibili all'uscita della Task 2, e quindi utilizzato per tutte le fasi successive del progetto (Task 3 e Task 4), è pertanto \textbf{118}, non 120.
+ 
+\section{Task 3 -- Costruzione dei piani di complementarità 2D}
+\label{sec:task3}
+ 
+Questa sezione è basata sulla lettura diretta di quattro script: \texttt{run\_task3\_projection.py} (proiezione PCA), \texttt{run\_task3\_lennard\_jones.py} (filtro energetico e correlazione), \texttt{generate\_interface\_images.py} (costruzione dei tensori 2D) e \texttt{plot\_lennard\_jones\_correlation.py} (grafico comparativo).
+ 
+Come chiarito in Sezione~\ref{sec:task2}, dei 120 complessi dimerici selezionati nella Task 1 solo \textbf{118} hanno un output completo della Task 2 (mancano \texttt{2PCC} e \texttt{1EWY}, le cui cartelle sono rimaste vuote). Tutte le elaborazioni descritte in questa sezione sono quindi condotte su questo sottoinsieme di 118 complessi.
+ 
+\subsection{Proiezione PCA sul piano medio di interfaccia}
+Per ciascun complesso, lo script \texttt{run\_task3\_projection.py} carica la nuvola di punti 3D dell'interfaccia prodotta dalla Task 2 (ligando e recettore uniti in un'unica nuvola di punti) e vi applica un'analisi delle componenti principali a 3 componenti (\texttt{sklearn.decomposition.PCA}). I primi due assi principali (PC1, PC2) definiscono il \textbf{piano medio di best-fit} dell'interfaccia, su cui ciascun punto viene proiettato; il terzo asse (PC3) misura la deviazione del punto dal piano, cioè la rugosità locale. Per ciascun complesso viene calcolata la percentuale di varianza spiegata da PC1+PC2, usata come indice di planarità dell'interfaccia. I risultati (coordinate proiettate per punto, e un riepilogo per complesso) sono salvati all'interno di \texttt{outputs/task3/} rispettivamente in \texttt{projected\_points/*\_projected.csv} e \texttt{summary\_geometrico\_pca\_task3.csv}.
+ 
+\textbf{Risultato.} Sui 118 complessi, la varianza spiegata dal piano medio è in media $86.3\% \pm 3.8\%$ (minimo $74.9\%$, massimo $93.3\%$; Figura~\ref{fig:task3-planarity}). Le interfacce del dataset sono quindi effettivamente ben approssimate da un piano bidimensionale nella quasi totalità dei casi, un risultato empirico che supporta direttamente l'assunzione centrale del progetto (rappresentare l'interfaccia come piano 2D anziché come volume 3D).
+ 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.65\textwidth]{task3_planarity_histogram.png}
+\caption{Distribuzione della percentuale di varianza spiegata dal piano medio di interfaccia (PC1+PC2) sui 118 complessi elaborati.}
+\label{fig:task3-planarity}
+\end{figure}
+ 
+\subsection{Assegnazione delle proprietà biofisiche ai punti}
+\label{sec:task3-residue-assignment}
+Per colorare la mappa con carica elettrostatica e idrofobicità, \texttt{generate\_interface\_images.py} deve associare a ciascun punto campionato un amminoacido. Va segnalato un limite metodologico non banale: il file di complementarità prodotto dalla Task 2 (\texttt{zernike\_complementarity\_symmetric.csv}, e la sua versione proiettata \texttt{*\_projected.csv}) non conserva l'identità del residuo di origine di ciascun punto -- contiene solo coordinate, indice del centro campionato e score di complementarità. Lo script assegna quindi gli amminoacidi \textbf{ciclando in ordine} sulla lista dei residui di interfaccia letta da \texttt{ligand\_interface\_residues.csv} / \texttt{receptor\_interface\_residues.csv} (un contatore separato per i punti di origine ligando e recettore, che scorre ciclicamente la lista dei residui, ripartendo dall'inizio ogni volta che la raggiunge in fondo). Si tratta quindi di un'approssimazione per interleaving, non di una vera mappatura spaziale punto--residuo: distribuisce comunque sull'interfaccia i valori chimici realmente presenti in quel complesso, ma senza garantire che un dato punto riceva il valore del residuo a cui è effettivamente più vicino nello spazio. È un'assegnazione approssimata ma non arbitraria, poiché usa comunque il pool corretto di amminoacidi del complesso in esame. Questo limite riguarda in particolare i Canali 2--3 definiti nella sezione successiva, che -- a differenza del Canale 1 -- non misurano una complementarità diretta tra ligando e recettore, ma la sola distribuzione (approssimata) delle proprietà chimiche di ciascun lato sulla mappa.
+ 
+Le scale usate sono standard: carica elettrostatica formale netta a pH 7.4 (Arg/Lys $=+1$, Asp/Glu $=-1$, His $=+0.1$, tutti gli altri $=0$) e idrofobicità di Kyte--Doolittle (da $-4.5$, Arg, a $+4.5$, Ile).
+ 
+\subsection{Filtro energetico di Lennard-Jones}
+Rispetto alla traccia, il progetto introduce un passaggio aggiuntivo di pesatura fisica dei punti di interfaccia (\texttt{run\_task3\_lennard\_jones.py}). Per ciascun punto si calcola la distanza reale dall'atomo più vicino del \emph{partner opposto}, usando le coordinate atomiche vere della patch di interfaccia (file \texttt{ligand\_interface\_patch.pdb} / \texttt{receptor\_interface\_patch.pdb}, letti con Biopython dalla cartella \texttt{all/} in cui la Task 1 li aveva originariamente scritti prima della pulizia di \texttt{clean\_task1.py}), non le coordinate dei punti di superficie campionati. La logica è cross-interfaccia (due \texttt{KDTree} di \texttt{scipy} indipendenti: punti del ligando contro atomi del recettore e viceversa). A questa distanza si applica una funzione di peso ispirata al potenziale di Lennard-Jones ($\sigma = 3.5$~\r{A}), nulla per $r < 2.0$~\r{A} (regime repulsivo) e per $r > 6.0$~\r{A} (interazione trascurabile), e compresa tra 0 e 1 nella buca attrattiva di van der Waals -- la forma della funzione, verificata su un complesso di test, è mostrata in Figura~\ref{fig:task3-lj-shape} e corrisponde a quella attesa per un potenziale troncato.
+ 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{final_correlation_plot.png}
+\caption{Correlazione tra lo score di complementarità geometrica (medio per complesso) e l'affinità sperimentale $\log_{10}(K_D)$, senza (pannello A) e con (pannello B) pesatura energetica di Lennard-Jones, sui 117 complessi disponibili dopo la correzione descritta di seguito.}
+\label{fig:task3-lj-shape}
+\end{figure}
+ 
+Per ciascun complesso, lo score di complementarità \emph{normalizzato} (\texttt{zernike\_distance} riscalata in $[0,1]$ \textbf{separatamente per ciascun complesso}, tramite Min-Max locale) viene mediato su tutti i punti campionati, sia in versione "pura" sia pesata dal peso di Lennard-Jones, e il risultato è correlato con $\log_{10}(K_D)$.
+ 
+\emph{Correzione dati: duplicazione di \texttt{1NVU}.} Il file di riepilogo prodotto dallo script (\texttt{pd.merge} tra gli score geometrici e il benchmark Excel, giunzione sul PDB ID) conteneva 118 righe per soli 117 PDB unici: \texttt{1NVU} compariva due volte, abbinato allo stesso identico score geometrico (calcolato una sola volta, sull'unica geometria disponibile su disco, verificata essere quella della catena ligando Q) ma a due valori di affinità sperimentale diversi -- gli stessi che nel benchmark corrispondono alle catene Q e R (Sezione~\ref{sec:task4-results}). È lo stesso problema di disallineamento geometria/target già identificato e corretto per la Task 4; qui è stato corretto rimuovendo la riga associata alla catena R, mantenendo quella coerente con la geometria realmente disponibile (catena Q). I risultati che seguono si riferiscono al dataset così corretto ($n=117$).
+ 
+\textbf{Risultato (ricalcolato da \texttt{summary\_lennard\_jones\_affinity.csv} dopo la correzione, $n=117$):}
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+& Pearson $R$ & $p$-value & Spearman $\rho$ & $p$-value \\
+\midrule
+Geometria pura & 0.029 & 0.759 & 0.081 & 0.383 \\
+Geometria + Lennard-Jones & 0.034 & 0.719 & 0.088 & 0.346 \\
+\bottomrule
+\end{tabular}
+\end{center}
+ 
+Nessuna delle due correlazioni è statisticamente significativa ($p \gg 0.05$): a livello di media per complesso, né lo score geometrico puro né quello pesato energeticamente mostrano una relazione lineare o monotona rilevabile con l'affinità sperimentale su questo dataset. La correzione della duplicazione di \texttt{1NVU} lascia il quadro sostanzialmente invariato rispetto alla stima preliminare (che includeva la riga duplicata, $R=0.030$ e $R=0.038$): con un segnale già così debole, un singolo campione ha un impatto trascurabile. Si tratta di un risultato negativo onesto, utile perché motiva concretamente il passaggio a un modello capace di sfruttare l'informazione spaziale completa dell'interfaccia (la CNN della Task 4) piuttosto che una sua media scalare, che a quanto pare non è sufficiente a catturare il segnale.
+ 
+\emph{Nota metodologica.} La normalizzazione Min-Max applicata \emph{per singolo complesso} (non globalmente sul dataset) rende la media dello score non direttamente comparabile in scala assoluta tra complessi diversi. È plausibile che questo contribuisca all'assenza di segnale osservata qui.
+ 
+\subsection{Discretizzazione su griglia $32\times32$ e canali}
+Le coordinate proiettate (PC1, PC2) vengono interpolate su una griglia regolare $32\times32$ tramite \texttt{scipy.interpolate.griddata} (metodo \texttt{linear}, con fallback \texttt{nearest} per riempire eventuali celle non coperte dall'interpolazione lineare, ad esempio ai bordi della patch). Si generano tre canali:
+\begin{description}
+    \item[Canale 1 -- Shape complementarity:] \texttt{complementarity\_score} di Zernike (definito nella Task 2 come $-\min(\text{distanza})$, quindi $\leq 0$): valori più vicini a 0 indicano \emph{migliore} complementarità, valori più negativi indicano interfaccia geometricamente meno complementare in quel punto.
+    \item[Canale 2 -- Potenziale elettrostatico:] carica formale netta del residuo assegnato (Sezione~\ref{sec:task3-residue-assignment}), proiettata sulla mappa -- non una misura di complementarità chimica tra le due superfici. Valori teorici in $[-1, 1]$.
+    \item[Canale 3 -- Idrofobicità:] valore Kyte--Doolittle del residuo assegnato, proiettato sulla mappa allo stesso modo del Canale 2. Valori teorici in $[-4.5, 4.5]$.
+\end{description}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{task3_tensor_preview_1ktz.png}
+\caption{Mappa 2D multi-canale ($32\times32$) generata per il complesso 1KTZ dopo la correzione del Canale 1: complementarità geometrica (sinistra, valori vicino a 0 = migliore complementarità), carica elettrostatica (centro), idrofobicità (destra).}
+\label{fig:task3-tensor}
+\end{figure}
+ 
+A differenza di quanto talvolta assunto, questo script \textbf{non applica alcuna standardizzazione} ai valori: il tensore salvato contiene i valori fisici grezzi. Nell'esempio del complesso 1KTZ (Figura~\ref{fig:task3-tensor}), il canale di shape complementarity varia tra $-3.22$ e $-0.42$ (media $-1.16$), il canale elettrostatico tocca l'intero range teorico $[-1,1]$, e quello di idrofobicità l'intero range $[-4.5,4.5]$ -- prima di un'eventuale standardizzazione, canali con scale fisiche così diverse (uno centrato vicino a $-1$, uno vicino a 0, uno con deviazione standard $\sim\!2.8$) entrerebbero nella CNN con pesi impliciti molto diversi, il che motiva la standardizzazione Z-score applicata più avanti nella pipeline di training (Sezione~\ref{sec:task4}).
+ 
+Per apprezzare la variabilità tra complessi diversi, la Figura~\ref{fig:task3-examples} mostra le stesse tre mappe per altri tre complessi del dataset (\texttt{3SGB}, \texttt{1OC0}, \texttt{2SIC}), generate automaticamente ogni 20 complessi processati da \texttt{generate\_interface\_images.py}.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{task3_examples_grid.png}
+\caption{Mappe 2D multi-canale per tre ulteriori complessi del dataset: \texttt{3SGB} (sopra), \texttt{1OC0} (centro), \texttt{2SIC} (sotto).}
+\label{fig:task3-examples}
+\end{figure}
+
+Alcune osservazioni qualitative:
+\begin{itemize}
+    \item \textbf{Canale 1 (shape complementarity):} in tutti e tre i casi la maggior parte della mappa è nei toni verde-giallo (valori tra $-0.5$ e $-1.2$ circa), con poche zone puntiformi molto più scure (fino a $-2$/$-2.5$) che indicano punti localizzati di complementarità particolarmente scarsa. Questo pattern -- ampie zone di complementarità moderata con pochi "difetti" localizzati -- è coerente con l'aspettativa biofisica che un'interfaccia di legame reale non sia uniformemente perfetta, ma presenti comunque regioni di incastro migliore o peggiore.
+    \item \textbf{Canale 2 (carica elettrostatica):} appare visibilmente più \emph{sparso} del canale 3 -- gran parte della mappa è bianca (carica nulla), con macchie rosse/blu isolate. Questo riflette direttamente la scala di carica usata (Sezione~\ref{sec:task3-residue-assignment}): solo Arg, Lys, His, Asp e Glu hanno carica non nulla, mentre i restanti 15 amminoacidi standard contribuiscono zero. Si notano inoltre, in alcuni angoli delle mappe (es.\ 1OC0, in alto a sinistra e in alto a destra), blocchi compatti di colore uniforme: sono un artefatto dell'interpolazione \texttt{nearest} usata come fallback da \texttt{griddata} nelle regioni della griglia esterne all'inviluppo convesso dei punti campionati, dove il valore del punto valido più vicino viene esteso su un'area ampia.
+    \item \textbf{Canale 3 (idrofobicità):} molto più "denso" e testurizzato del canale 2, perché quasi tutti gli amminoacidi hanno un valore di Kyte--Doolittle non nullo: la mappa presenta quindi una texture continua su tutta la superficie, senza le ampie zone bianche del canale elettrostatico.
+\end{itemize}
+ 
+L'output è un tensore \texttt{.npy} di forma $(3,32,32)$ per complesso, salvato in \texttt{outputs/task3/interface\_maps/}, insieme a un'anteprima grafica a tre pannelli generata per un sottoinsieme dei complessi (uno ogni 20, per contenere il numero di immagini prodotte).
+ 
+\section{Task 4 -- Predizione dell'affinità tramite CNN}
+\label{sec:task4}
+ 
+Questa sezione è basata sulla lettura diretta di \texttt{models.py} e \texttt{train\_final.py}.
+ 
+\subsection{Target}
+Il target di regressione è il logaritmo negativo della costante di dissociazione,
+\[
+pK_D = -\log_{10} K_D ,
+\]
+scelta standard che linearizza un range di valori distribuito su diversi ordini di grandezza e lo rende proporzionale all'energia libera di legame.
+ 
+\subsection{Architettura \texttt{InterfaceCNN}}
+La rete (PyTorch, \texttt{models.py}) elabora tensori $(3,32,32)$ tramite tre blocchi convoluzionali a contrazione spaziale progressiva ed espansione dei canali latenti. Ogni blocco applica \texttt{Conv2d} ($3\times3$, padding 1) $\rightarrow$ \texttt{BatchNorm2d} $\rightarrow$ \texttt{ReLU} $\rightarrow$ \texttt{MaxPool2d}($2$):
+\begin{center}
+$(3,32,32) \rightarrow (16,16,16) \rightarrow (32,8,8) \rightarrow (64,4,4)$
+\end{center}
+Segue il blocco di regressione: \texttt{Flatten} (1024) $\rightarrow$ \texttt{Linear}(1024, 128) $\rightarrow$ \texttt{Dropout}($p=0.3$) $\rightarrow$ \texttt{Linear}(128, 1), con uscita lineare non vincolata. La scelta di una rete custom, anziché di architetture pre-addestrate tipo ResNet o VGG, è motivata dal \emph{mismatch} tra immagini naturali e griglie biofisiche $32\times32$ a canali non-RGB.
+ 
+\subsection{Protocollo di addestramento}
+\label{sec:task4-protocol}
+Il protocollo usa una \textbf{procedura a due livelli} per ciascuno dei 5 fold esterni della cross-validation, pensata per evitare che qualunque decisione sul modello (statistiche di standardizzazione, scelta del checkpoint) sia influenzata dai dati usati per la valutazione finale di quel fold:
+\begin{enumerate}
+    \item il training set esterno del fold viene ulteriormente suddiviso 85\%/15\% in un train-interno e un validation-interno (\texttt{sklearn.model\_selection.train\_test\_split}, seed fisso);
+    \item la standardizzazione Z-score per canale viene calcolata \textbf{solo} sul train-interno, e applicata a tutti e tre i sottoinsiemi (train-interno, validation-interno, test esterno) del fold;
+    \item il modello viene addestrato sul train-interno; il checkpoint migliore viene scelto in base alla loss sul validation-interno (non sul test esterno);
+    \item il test esterno viene usato \textbf{esclusivamente} per generare le predizioni OOF finali, mai per alcuna decisione durante l'addestramento.
+\end{enumerate}
+Il resto del protocollo:
+\begin{itemize}
+    \item \textbf{Loss}: errore quadratico medio (MSE).
+    \item \textbf{Ottimizzatore}: Adam, learning rate iniziale $\eta = 10^{-3}$, \texttt{weight\_decay} $=2\times10^{-3}$, con scheduler \texttt{ReduceLROnPlateau} (\texttt{factor} 0.5, \texttt{patience} 7 epoche, applicato sulla loss di validation-interna).
+    \item \textbf{Data augmentation}: riflessioni orizzontali/verticali e rotazioni ortogonali discrete ($90^\circ$, $180^\circ$, $270^\circ$) applicate ad ogni epoca, solo sul train-interno. La giustificazione è fisica: l'affinità è uno scalare termodinamico invariante per rotazione, mentre l'orientamento della griglia dipende da assi PCA arbitrari.
+    \item \textbf{Hardware}: accelerazione su Apple Silicon tramite backend PyTorch MPS.
+    \item 100 epoche, batch size 8, 5 fold esterni (\texttt{KFold}, seed 42).
+\end{itemize}
+ 
+\subsection{Risultati}
+\label{sec:task4-results}
+Dei 118 complessi con output completo della Task 3, altri due sono stati esclusi in questa fase dopo un controllo di integrità dei dati: \texttt{1NVU} (il complesso compare due volte nel benchmark originale con due catene ligando diverse, Q e R, entrambe accoppiate allo stesso recettore; il tensore su disco corrisponde solo a una delle due geometrie, verificata essere la catena Q, e per evitare un disallineamento tra input e target è stato escluso esplicitamente) e \texttt{1UUG} (la relativa costante di dissociazione nel benchmark è riportata come \texttt{<1E-13}~M, un limite di rilevazione strumentale piuttosto che una misura puntuale, e non è quindi utilizzabile come target di regressione). Il dataset di training della Task 4 è pertanto composto da \textbf{116} complessi.
+ 
+Predizioni out-of-fold aggregate sui 5 fold esterni:
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+& RMSE & Pearson $R$ & $p$-value & Spearman $\rho$ \\
+\midrule
+CNN (\texttt{train\_final.py}) & 1.9913 & 0.4235 & $2.2\times10^{-6}$ & 0.4224 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Il coefficiente di Pearson è altamente significativo ($p \ll 0.05$), con intervallo di confidenza al 95\% (trasformazione di Fisher) pari a $[0.261, 0.562]$; il modello spiega circa il $17.9\%$ della varianza ($R^2 = 0.179$). È un risultato modesto in valore assoluto ma \textbf{genuino}: nettamente superiore alla baseline geometrica pura della Task 3 ($R = 0.029$, non significativa, Sezione~\ref{sec:task3}), a conferma che la mappa 2D completa contiene informazione predittiva che una sua media scalare non cattura. Rispetto al risultato preliminare ottenuto sui 118 complessi prima di questo controllo di integrità ($R=0.388$), sia il coefficiente di correlazione sia la sua significatività migliorano leggermente: rimuovere due campioni con target inaffidabile o ambiguo (uno per disallineamento geometria/target, l'altro per censura sperimentale del dato) aiuta il modello più di quanto costi in termini di numerosità campionaria.
+ 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{task4_oof_scatter.png}
+\caption{Predizioni out-of-fold della CNN ($pK_D$ predetto) contro l'affinità sperimentale ($pK_D$ reale) per i 116 complessi, con la linea di predizione perfetta $y=x$ come riferimento. La dispersione attorno alla diagonale è coerente con $R^2 \approx 0.18$: il modello cattura una tendenza reale ma con margini di errore ancora ampi caso per caso.}
+\label{fig:task4-scatter}
+\end{figure}
+ 
+I pesi appresi da ciascuno dei 5 modelli (uno per fold, \texttt{cnn\_final\_fold\_1.pth} \ldots \texttt{cnn\_final\_fold\_5.pth}) sono salvati come \texttt{state\_dict} di PyTorch -- 155\,137 parametri totali per modello, distribuiti tra i tre blocchi convoluzionali, le statistiche di \texttt{BatchNorm} e i due layer densi finali. Insieme al file \texttt{oof\_predictions.csv} (PDB ID, $pK_D$ reale e predetto per ciascun complesso), permettono di rigenerare esattamente le predizioni OOF riportate sopra senza dover riaddestrare la rete, e costituiscono la base per eventuali analisi successive (ad es.\ mappe di salienza, Sezione~\ref{sec:discussione}).
+ 
+
+\section{Task 4b -- Confronto con una baseline di geometric deep learning (CNN 3D)}
+\label{sec:task4b}
+
+La traccia richiede esplicitamente un confronto con un modello di geometric deep learning di riferimento (Sezione~\ref{sec:discussione}). Questa sezione descrive una seconda pipeline, indipendente dalla precedente, costruita per rispondere a questo requisito: una CNN 3D che elabora direttamente le patch di superficie della Task 1, \textbf{senza} passare né dal matching Zernike (Task 2) né dalla proiezione PCA sul piano medio di interfaccia (Task 3). È basata sulla lettura diretta di \texttt{scripts/task4b/voxelize\_interface.py}, \texttt{models\_3d.py} e \texttt{train\_3d.py}.
+
+\subsection{Voxelizzazione dell'interfaccia}
+Per ciascun complesso, i file \texttt{ligand\_surface\_patch.csv} e \texttt{receptor\_surface\_patch.csv} prodotti dalla Task 1 vengono interpolati su una griglia regolare $16\times16\times16$ (\texttt{scipy.interpolate.griddata}), analogamente alla discretizzazione 2D della Task 3 ma su un volume anziché su un piano proiettato. A differenza della Task 3, questi file conservano l'identità del residuo di origine di ciascun punto (colonna \texttt{residue\_name}), il che permette qui una \textbf{vera mappatura spaziale punto--residuo} per i canali chimici, superando il limite di interleaving approssimato discusso in Sezione~\ref{sec:task3-residue-assignment}. Si generano 4 canali:
+\begin{description}
+    \item[Canale 0 -- Densità ligando:] densità elettronica approssimata (Sezione~\ref{sec:task1}) interpolata dai soli punti del ligando; posta a zero (non estesa per \texttt{nearest}) fuori dall'inviluppo convesso dei suoi punti, così da annullarsi fisicamente lontano dal ligando.
+    \item[Canale 1 -- Densità recettore:] idem, dai soli punti del recettore.
+    \item[Canale 2 -- Carica elettrostatica:] stessa scala della Task 3 (Sezione~\ref{sec:task3-residue-assignment}), calcolata sulla nuvola combinata ligando+recettore con fallback \texttt{nearest}.
+    \item[Canale 3 -- Idrofobicità:] scala di Kyte--Doolittle, stesso trattamento del Canale 2.
+\end{description}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{task4b_voxel_preview_1ktz.png}
+\caption{Sezione centrale del volume voxel $(4,16,16,16)$ per il complesso 1KTZ. Le macchie di densità di ligando (blu) e recettore (arancione) sono geometrie distinte che si sovrappongono parzialmente nella zona di interfaccia.}
+\label{fig:task4b-voxel}
+\end{figure}
+A differenza del Canale 1 della Task 3 (uno score di complementarità già calcolato da Zernike), i Canali 0--1 qui sono le \textbf{due superfici tenute separate}: la rete riceve entrambe le geometrie nello stesso volume e deve apprendere autonomamente, tramite le convoluzioni 3D congiunte, dove le due forme si incastrano bene o male -- non le riceve già confrontate a monte. È questo che rende la pipeline un confronto genuino con un approccio di geometric deep learning end-to-end, anziché una semplice riformulazione tridimensionale della Task 3.
+
+Un vantaggio pratico di questa pipeline: non dipendendo dall'output della Task 2, recupera i 2 complessi (\texttt{2PCC}, \texttt{1EWY}) esclusi altrove per il collo di bottiglia computazionale del matching Zernike su Leonardo (Sezione~\ref{sec:task2-hpc-cost}). La voxelizzazione parte quindi da \textbf{120} complessi anziché 118.
+
+\subsection{Architettura \texttt{Interface3DCNN}}
+Analoga a \texttt{InterfaceCNN} (Sezione~\ref{sec:task4}) ma con convoluzioni 3D: tre blocchi \texttt{Conv3d} ($3\times3\times3$, padding 1) $\rightarrow$ \texttt{BatchNorm3d} $\rightarrow$ \texttt{ReLU} $\rightarrow$ \texttt{MaxPool3d}($2$):
+\begin{center}
+$(4,16,16,16) \rightarrow (16,8,8,8) \rightarrow (32,4,4,4) \rightarrow (64,2,2,2)$
+\end{center}
+seguiti da \texttt{Flatten} (512) $\rightarrow$ \texttt{Linear}(512, 128) $\rightarrow$ \texttt{Dropout}($p=0.3$) $\rightarrow$ \texttt{Linear}(128, 1) -- 136\,977 parametri totali, meno della metà dei 155\,137 della CNN 2D nonostante il volume 3D, poiché il layer denso finale riceve una feature map spianata più piccola (512 contro 1024).
+
+\subsection{Protocollo di addestramento}
+Identico, riga per riga, al protocollo a due livelli della Task 4 (Sezione~\ref{sec:task4-protocol}): stesso split interno 85/15 per la selezione del checkpoint, stessa standardizzazione Z-score calcolata solo sul train-interno di ciascun fold, stessa augmentation geometrica (qui estesa a riflessioni e rotazioni di $90^\circ$ sui tre assi del volume), stesso ottimizzatore, stessi 5 fold esterni con seed 42. Un'unica differenza tecnica: le convoluzioni 3D non sono supportate dal backend MPS di PyTorch (confermato da un errore di runtime esplicito), per cui l'addestramento è stato eseguito su CPU (Google Colab) anziché su GPU Apple Silicon.
+
+\subsection{Risultati}
+\label{sec:task4b-results}
+Dei 120 complessi voxelizzati, valgono le stesse due esclusioni della Task 4 (\texttt{1NVU} per disallineamento geometria/target, \texttt{1UUG} per censura sperimentale del K$_D$, Sezione~\ref{sec:task4-results}): il dataset di training è composto da \textbf{118} complessi, 2 in più della pipeline 2D grazie al recupero di \texttt{2PCC} e \texttt{1EWY}.
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+& $n$ & RMSE & Pearson $R$ & $p$-value & $R^2$ \\
+\midrule
+CNN 2D (\texttt{train\_final.py}, Sez.~\ref{sec:task4-results}) & 116 & 1.9913 & 0.4235 & $2.2\times10^{-6}$ & 17.9\% \\
+CNN 3D (\texttt{train\_3d.py}) & 118 & 1.9790 & 0.4642 & $1.2\times10^{-7}$ & 21.5\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Il coefficiente di Pearson della CNN 3D ha intervallo di confidenza al 95\% pari a $[0.309, 0.595]$. Numericamente, la CNN 3D è leggermente superiore su tutti i fronti -- RMSE più basso, $R$ e $R^2$ più alti, $p$-value più significativo -- pur partendo da dati grezzi e senza alcun descrittore di forma pre-calcolato a mano. Va però letto con la dovuta cautela statistica: gli intervalli di confidenza dei due $R$ si sovrappongono ampiamente, per cui tale differenza non può essere considerata statisticamente significativa: i risultati indicano prestazioni comparabili tra le due architetture, non una netta superiorità della CNN 3D rispetto alla CNN 2D.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{task4_vs_task4b_comparison.png}
+\caption{Predizioni out-of-fold della CNN 2D (sinistra, $n=116$) e della CNN 3D (destra, $n=118$) contro l'affinità sperimentale, sulla stessa scala di assi. Le due nuvole di punti mostrano una dispersione simile attorno alla diagonale di predizione perfetta.}
+\label{fig:task4b-comparison}
+\end{figure}
+
+\paragraph{Interpretazione.} Il risultato ha valore scientifico indipendentemente da quale dei due modelli sia marginalmente migliore: dimostra che l'informazione geometrica rilevante per l'affinità può essere estratta da una rete 3D end-to-end direttamente dai dati grezzi della Task 1, senza il costoso passaggio intermedio di espansione in polinomi di Zernike (Task 2, eseguito su CINECA Leonardo con un consumo di migliaia di core-hours, Sezione~\ref{sec:task2-hpc-cost}). Questo soddisfa il confronto con un modello di geometric deep learning richiesto dalla traccia (Sezione~\ref{sec:discussione}).
+
+\section{Discussione e limiti}
+\label{sec:discussione}
+
+\paragraph{Dimensione del campione.} Il limite dominante, comune a entrambi i modelli, è la numerosità. La CNN 2D lavora su 116 complessi (118 disponibili dalla Task 3, meno 2 esclusi per un controllo di integrità dei dati, Sezione~\ref{sec:task4-results}): con $n=116$, il coefficiente di Pearson $R=0.4235$ ha un intervallo di confidenza al 95\% pari a $[0.261, 0.562]$. La CNN 3D recupera 2 complessi in più ($n=118$, Sezione~\ref{sec:task4b-results}), ma l'intervallo di confidenza del suo $R=0.4642$ -- $[0.309, 0.595]$ -- resta di ampiezza confrontabile: il guadagno di due campioni non è sufficiente a stringere sensibilmente l'incertezza statistica. In entrambi i casi il segnale è reale e distinguibile da zero, ma un campione più numeroso resterebbe l'intervento più efficace per ridurre questa incertezza, indipendentemente dall'architettura scelta.
+
+\paragraph{Confronti con baseline.} La traccia richiede il confronto con modelli di geometric deep learning di riferimento e con descrittori Zernike puri. L'analisi di correlazione di Lennard-Jones (Sezione~\ref{sec:task3}) costituisce di fatto la baseline "Zernike-only" richiesta dalla traccia: la media per complesso dello score geometrico (pesato o meno) non è significativamente correlata con l'affinità ($R \approx 0.03$--$0.04$, $p > 0.6$). Entrambe le CNN rappresentano un miglioramento sostanziale e statisticamente robusto rispetto a questa baseline -- la 2D con $R=0.4235$ ($p=2.2\times10^{-6}$), la 3D con $R=0.4642$ ($p=1.2\times10^{-7}$) -- a conferma che l'informazione spaziale completa dell'interfaccia contiene segnale non catturato da una sua semplice media scalare, indipendentemente da come tale informazione viene rappresentata (piano 2D con descrittore Zernike pre-calcolato, o volume 3D grezzo). Il confronto con un modello di geometric deep learning di riferimento, richiesto dalla traccia, è coperto dalla CNN 3D della Task 4b (Sezione~\ref{sec:task4b}): le prestazioni risultano comparabili a quelle della pipeline 2D principale (la differenza tra i due $R$ non è essa stessa statisticamente significativa, Sezione~\ref{sec:task4b-results}), pur partendo la CNN 3D da dati grezzi privi di qualunque descrittore di forma pre-calcolato a mano.
+
+\paragraph{Cosa suggerisce il confronto 2D--3D sui descrittori di Zernike.} Il fatto che la pipeline 2D (basata sui descrittori di Zernike pre-calcolati) e la CNN 3D end-to-end (senza alcun descrittore di forma pre-calcolato) raggiungano prestazioni statisticamente indistinguibili ($R=0.4235$ vs.\ $R=0.4642$, intervalli di confidenza ampiamente sovrapposti, Sezione~\ref{sec:task4b-results}) è un risultato che merita di essere letto anche nella direzione opposta a quella discussa sopra: una rappresentazione geometrica compatta come l'espansione in polinomi di Zernike 2D sembra conservare gran parte -- se non la quasi totalità -- dell'informazione geometrica rilevante per la predizione dell'affinità, senza che sia necessario elaborare direttamente la geometria voxelizzata completa in 3D. È un risultato potenzialmente interessante dal punto di vista del metodo: suggerisce che il descrittore di Zernike non comprima solo la rappresentazione dei dati, ma anche l'informazione realmente utile al compito. Va però letto con cautela: il confronto qui condotto è tra due \emph{pipeline} complete (rappresentazione + CNN), non un confronto controllato che isoli il solo contributo del descrittore di Zernike a parità di tutto il resto -- le due reti differiscono anche in architettura, canali di input e dimensione del dataset disponibile (116 vs.\ 118 complessi). Non si può quindi attribuire con certezza il risultato ai soli descrittori di Zernike; resta comunque un elemento promettente a favore della loro capacità di catturare l'informazione geometrica rilevante per il binding, che varrebbe la pena verificare più direttamente in un lavoro futuro (ad es.\ confrontando a parità di architettura un input Zernike-2D contro un input voxel-3D sullo stesso sottoinsieme di complessi).
+
+\paragraph{Superficie molecolare: limite noto.} Il comando ChimeraX usato in \texttt{chimerax.py} (Sezione~\ref{sec:task1}) esegue \texttt{open}, \texttt{surface}, \texttt{save ... format obj} senza nascondere la rappresentazione atomica (sfere e bastoncini) prima dell'esportazione: una verifica a posteriori ha misurato che circa il 25\% dei punti (mediana) risulta geometricamente interno a un atomo, quindi non appartiene alla superficie molecolare vera e propria. Questo intacca sia i conteggi di punti riportati in Tabella~\ref{tab:1ktz} e Tabella~\ref{tab:stats}, sia l'affermazione in Sezione~\ref{sec:results} secondo cui il numero di punti scala con l'estensione reale dell'interfaccia e non con i parametri di campionamento -- affermazioni che restano quindi da intendersi come non verificate rispetto a questo effetto. La correzione è nota e localizzata (aggiungere \texttt{--cmd "hide atoms"} e \texttt{--cmd "hide cartoons"} prima di \texttt{surface}), ma richiede di rilanciare sia la Task 1 sia la Task 2 per rigenerare superfici, tensori e risultati a valle.
+
+\paragraph{Interpretabilità.} La traccia richiede una mappatura interpretabile tra feature di interfaccia e affinità. Un'estrazione di mappe di salienza tramite gradienti (calcolo del gradiente dell'output rispetto a ciascun pixel/voxel di input, per identificare le regioni della mappa che maggiormente influenzano la predizione) rappresenterebbe la via naturale per verificare se le zone più rilevanti per la CNN coincidono con residui biologicamente noti come hotspot di legame; non è stata eseguita in questa fase del progetto e resta elencata come sviluppo prioritario in Sezione~\ref{sec:bilancio}.
+
+\subsection{Bilancio rispetto all'obiettivo del progetto}
+\label{sec:bilancio}
+
+La proposta di progetto chiedeva di \textbf{predire quantitativamente quanto due proteine siano compatibili al legame} -- cioè la loro affinità sperimentale $K_D$ -- a partire da una rappresentazione fisicamente interpretabile della morfologia della loro interfaccia (complementarità geometrica, elettrostatica, idrofobicità).
+
+\paragraph{Cosa è stato effettivamente costruito.} La pipeline realizza per intero la catena richiesta dalla traccia: identificazione dell'interfaccia e delle sue patch di superficie (Task 1), quantificazione della complementarità di forma tramite espansione in polinomi di Zernike 2D (Task 2), costruzione di piani di complementarità 2D multi-canale fisicamente interpretabili (Task 3), e un modello supervisionato (CNN) che apprende a predire $pK_D$ da queste mappe (Task 4). A questa pipeline principale si affianca una seconda architettura indipendente (Task 4b), una CNN 3D end-to-end che soddisfa esplicitamente il confronto con un modello di geometric deep learning richiesto dalla traccia. Su questo piano puramente realizzativo, l'obiettivo della traccia è soddisfatto in tutte le sue componenti: esiste una pipeline riproducibile end-to-end, dal dato grezzo (struttura PDB) alla predizione numerica di affinità, corredata di una baseline di confronto genuina.
+
+\paragraph{Quanto siamo vicini all'obiettivo predittivo.} I due modelli spiegano rispettivamente il $17.9\%$ (CNN 2D, $R^2=0.179$) e il $21.5\%$ (CNN 3D, $R^2=0.215$) della varianza dell'affinità sperimentale sul dataset disponibile. Sono risultati \textbf{reali e non casuali} -- la significatività statistica è netta in entrambi i casi ($p=2.2\times10^{-6}$ e $p=1.2\times10^{-7}$ rispettivamente) e il miglioramento rispetto alla baseline puramente geometrica (che non ha alcun potere predittivo rilevabile, $R \approx 0.03$) dimostra che l'informazione geometrica dell'interfaccia -- rappresentata sia come mappa 2D con descrittore Zernike sia come volume 3D grezzo -- contiene segnale informativo genuino sull'affinità. Ma è altrettanto vero che, in entrambi i casi, tra il $78\%$ e l'$82\%$ della variabilità dell'affinità resta \textbf{non spiegato} dal modello: allo stato attuale nessuna delle due pipeline è in grado di predire con precisione pratica il valore di $K_D$ di un nuovo complesso, né di discriminare in modo affidabile tra affinità simili. Per l'applicazione più ambiziosa menzionata nella proposta stessa -- la Task 5 opzionale di affinity maturation in-silico, che richiederebbe di classificare correttamente il segno e l'entità di piccole variazioni di affinità dovute a singole mutazioni -- un $R^2$ inferiore al $25\%$ è insufficiente per entrambi i modelli: un simile utilizzo pratico richiederebbe un potere predittivo sostanzialmente maggiore, indipendentemente dall'architettura scelta.
+
+\paragraph{Il valore dei risultati.} Come dimostrazione che l'informazione geometrica dell'interfaccia contiene segnale predittivo reale, distinguibile dal rumore statistico e superiore a una baseline puramente geometrica -- e che questo segnale è recuperabile sia da un framework fisicamente motivato (Zernike 2D + canali chimici + CNN) sia da un approccio di geometric deep learning end-to-end su dati grezzi -- il risultato è positivo e onestamente riportabile, ed è rafforzato proprio dalla convergenza tra le due pipeline indipendenti. Come strumento pronto per un uso predittivo applicato, il risultato resta preliminare per entrambe.
+
+\paragraph{Cosa servirebbe per migliorare, in ordine di impatto atteso.}
+\begin{enumerate}
+    \item \textbf{Più campioni.} È il fattore singolo più limitante, per entrambe le architetture. Con $n=116$--$118$ e reti convoluzionali di $\sim$137\,000--155\,000 parametri, il rapporto tra numerosità del campione e capacità del modello è sfavorevole; gli intervalli di confidenza ampi su $R$ (discussi sopra) sono il sintomo diretto di questo limite. L'intero benchmark PPB-Affinity originale contiene molte più strutture dei dimeri qui usati (il sottoinsieme è stato ristretto ai soli complessi a due catene per semplicità geometrica, e ulteriormente ridotto per controlli di integrità dei dati): estendere la pipeline ai complessi multi-catena sarebbe la strada più diretta per aumentare $n$ senza cercare un dataset esterno, e beneficerebbe entrambi i modelli.
+    \item \textbf{Normalizzazione globale, non per-complesso, nel punteggio Zernike grezzo.} Come discusso in Sezione~\ref{sec:task3}, la baseline geometrica usa una normalizzazione Min-Max calcolata separatamente per ciascun complesso, che verosimilmente cancella proprio l'informazione di intensità assoluta più rilevante per l'affinità -- lo stesso problema già risolto per l'input di entrambe le CNN passando a una standardizzazione Z-score globale.
+    \item \textbf{Assegnazione punto--residuo più accurata nella pipeline 2D (Sezione~\ref{sec:task3-residue-assignment}).} L'attuale schema di interleaving non conserva la posizione spaziale: una verifica sul complesso 1KTZ mostra che solo il 17\% dei punti riceve il residuo effettivamente più vicino, per cui i Canali 2 e 3 riportano la composizione chimica dell'interfaccia distribuita sulla mappa, non la sua vera disposizione spaziale. L'informazione per una mappatura esatta è già disponibile: \texttt{center\_index} (Task 2) indica la riga corrispondente nel file \texttt{*\_surface\_patch.csv} della Task 1, che contiene la colonna \texttt{residue\_name} -- la correzione richiede quindi solo di sostituire il contatore ciclico con una lettura diretta (\texttt{residue\_name} alla riga \texttt{center\_index} della patch del lato corrispondente) e rigenerare i tensori, un'operazione dell'ordine dei minuti, non delle ore. La Task 4b supera già questo limite per la propria rappresentazione voxel (Sezione~\ref{sec:task4b}), grazie ai dati della Task 1.
+    \item \textbf{Confronto con ulteriori baseline di geometric deep learning.} La CNN 3D della Task 4b (Sezione~\ref{sec:task4b}) soddisfa il requisito della traccia con un primo confronto genuino; resterebbe utile estenderlo a un secondo confronto con un'architettura pubblicata (es.\ una Graph Neural Network sui residui di interfaccia), per una contestualizzazione più ampia rispetto allo stato dell'arte.
+    \item \textbf{Verifica di robustezza: split per omologia di sequenza.} Una verifica condotta a valle del protocollo standard mostra che il 64\% dei complessi nel test set di ciascun fold ha un omologo di sequenza nel training set (convenzione union) -- una possibile fonte di ottimismo nella stima delle prestazioni se la CNN sfruttasse similarità di sequenza piuttosto che pattern geometrici generalizzabili. Un rilancio con fold costruiti per gruppi di omologia (nessuna proteina omologa condivisa tra training e test) produce però un risultato sostanzialmente invariato ($R = 0.37 \pm 0.03$): un'indicazione incoraggiante che il segnale appreso dal modello non dipenda in modo rilevante dalla presenza di omologhi tra training e test. Vale la pena riportare questa verifica in modo più prominente nei risultati (Sezione~\ref{sec:task4-results}) in una revisione successiva.
+    \item \textbf{Interpretabilità tramite mappe di salienza}, per verificare se le regioni della mappa (2D o voxel 3D) su cui la CNN si concentra corrispondono a residui biologicamente plausibili (hotspot di legame noti in letteratura) -- un controllo di sanità che, se superato su entrambe le architetture, rafforzerebbe sostanzialmente la credibilità di entrambi i modelli anche a fronte di un $R^2$ non elevato.
+    \item \textbf{Potenziale elettrostatico più realistico.} Il Canale 2 usa attualmente una scala di carica formale netta semplificata (Sezione~\ref{sec:task3-residue-assignment}); sostituirla con un calcolo del potenziale elettrostatico tramite APBS (\emph{Adaptive Poisson-Boltzmann Solver}) -- che tiene conto della distribuzione di carica reale, della costante dielettrica del solvente e degli effetti di schermatura ionica -- produrrebbe una rappresentazione elettrostatica più realistica e potenzialmente più informativa per il modello.
+\end{enumerate}
+
+\section{Sviluppi futuri}
+La direzione naturale di estensione è il passaggio a una predizione \emph{blind}, in cui il modello riceva le superfici complete delle due proteine isolate senza conoscere a priori la regione di legame. Questo trasformerebbe il lavoro da esercizio di regressione supervisionata su interfacce note a strumento di screening virtuale applicabile a coppie di proteine mai co-cristallizzate, ad esempio a partire da strutture predette.
+
+\begin{thebibliography}{9}
+
+\bibitem{milanetti2021zernike2d}
+E.~Milanetti, M.~Miotto, L.~Di Rienzo, M.~Monti, G.~Gosti, G.~Ruocco.
+\newblock 2D Zernike polynomial expansion: Finding the protein-protein binding regions.
+\newblock \emph{Computational and Structural Biotechnology Journal}, 19:29--36, 2021.
+\newblock \url{https://doi.org/10.1016/j.csbj.2020.11.051}
+
+\bibitem{miotto2025zepyros}
+M.~Miotto, L.~Di Rienzo, L.~Bo', G.~Ruocco, E.~Milanetti.
+\newblock Zepyros: a webserver to evaluate the shape complementarity of protein--protein interfaces.
+\newblock \emph{Bioinformatics Advances}, 5(1):vbaf051, 2025.
+\newblock \url{https://doi.org/10.1093/bioadv/vbaf051}
+
+\end{thebibliography}
+ 
+\end{document}
