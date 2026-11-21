@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 91,
+    "pdb_id": "1JIW",
+    "ligand_chains": [
+      "P"
+    ],
+    "receptor_chains": [
+      "I"
+    ],
+    "kd_m": 4e-12,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Alkaline metallo-proteinase",
+    "receptor_name": "Proteinase inhibitor",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1JIW.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4306,
+    "ligand_atoms": 3514,
+    "receptor_atoms": 792,
+    "ligand_interface_residues": 37,
+    "receptor_interface_residues": 24,
+    "residue_contacts": 82,
+    "ligand_patch_atoms": 296,
+    "receptor_patch_atoms": 169,
+    "ligand_surface_points": 59347,
+    "receptor_surface_points": 24592,
+    "ligand_full_surface_points": 527701,
+    "receptor_full_surface_points": 91839
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

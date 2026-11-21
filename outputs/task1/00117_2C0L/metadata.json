@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 117,
+    "pdb_id": "2C0L",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 1.1e-07,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "TRP region of PEX5",
+    "receptor_name": "Sterol carrier protein 2",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2C0L.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 3202,
+    "ligand_atoms": 2280,
+    "receptor_atoms": 922,
+    "ligand_interface_residues": 39,
+    "receptor_interface_residues": 19,
+    "residue_contacts": 77,
+    "ligand_patch_atoms": 319,
+    "receptor_patch_atoms": 149,
+    "ligand_surface_points": 33626,
+    "receptor_surface_points": 22561,
+    "ligand_full_surface_points": 243619,
+    "receptor_full_surface_points": 110616
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

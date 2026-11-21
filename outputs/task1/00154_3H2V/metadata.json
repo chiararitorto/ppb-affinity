@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 154,
+    "pdb_id": "3H2V",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "E"
+    ],
+    "kd_m": 2.21e-05,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Vinculin tail domain",
+    "receptor_name": "Raver1 RRM1 domain",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/3H2V.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 7689,
+    "ligand_atoms": 1351,
+    "receptor_atoms": 600,
+    "ligand_interface_residues": 19,
+    "receptor_interface_residues": 13,
+    "residue_contacts": 42,
+    "ligand_patch_atoms": 153,
+    "receptor_patch_atoms": 112,
+    "ligand_surface_points": 20238,
+    "receptor_surface_points": 15504,
+    "ligand_full_surface_points": 153309,
+    "receptor_full_surface_points": 69116
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

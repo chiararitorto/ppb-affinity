@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 200,
+    "pdb_id": "2A9K",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 6e-08,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "RalA.GDP",
+    "receptor_name": "Mono-ADP-ribosyltransferase C3",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2A9K.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 3068,
+    "ligand_atoms": 1397,
+    "receptor_atoms": 1671,
+    "ligand_interface_residues": 26,
+    "receptor_interface_residues": 24,
+    "residue_contacts": 74,
+    "ligand_patch_atoms": 196,
+    "receptor_patch_atoms": 191,
+    "ligand_surface_points": 31728,
+    "receptor_surface_points": 33454,
+    "ligand_full_surface_points": 249582,
+    "receptor_full_surface_points": 336037
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

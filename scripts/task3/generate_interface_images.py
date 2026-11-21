@@ -11,12 +11,13 @@
 # 1. Carica le coordinate bidimensionali proiettate sul piano medio della PCA (PC1, PC2)
 #    generate nel Task 3b, unitamente al profilo geometrico dell'interfaccia.
 # 2. Carica i file dei residui d'interfaccia (receptor/ligand_interface_residues.csv).
-# 3. Assegnazione Chimica per Interleaving: Lo script identifica la sorgente del punto
-#    (ligand/receptor) e vi associa ciclicamente gli amminoacidi reali estratti dalla
-#    colonna 'residue_name' del complesso, evitando fallback sistematici su singoli
-#    residui neutri (es. GLY o ALA). Non è una vera mappatura spaziale punto-residuo:
-#    un punto riceve il residuo che gli tocca nel ciclo, non necessariamente quello
-#    più vicino nello spazio.
+# 3. Assegnazione Chimica punto-residuo: ogni punto campionato della Task 2 conserva
+#    'center_index', cioè la riga corrispondente nel file della Task 1
+#    (ligand/receptor_surface_patch.csv) del lato da cui proviene. Il residuo assegnato
+#    al punto è quindi esattamente il 'residue_name' di quella riga: è una vera
+#    mappatura spaziale punto-residuo. Lo script verifica che le coordinate del punto
+#    coincidano con quelle della riga indicata, e scarta il complesso se non è così.
+#    (La versione precedente assegnava i residui ciclicamente, senza legame spaziale.)
 # 4. Assegnazione delle Proprietà Biofisiche: L'amminoacido viene convertito in valori
 #    continui usando scale strutturate e standardizzate:
 #    - Carica Elettrostatica: Scala formale netta a pH fisiologico (7.4).
@@ -34,7 +35,7 @@
 #
 # OUTPUT GENERATI (in outputs/task3/interface_maps/):
 # - <protein_folder>_tensor.npy: Matrice NumPy tridimensionale pronta per l'input in reti CNN.
-# - <protein_folder>_map_preview.png: Plot diagnostico a 3 pannelli ad alta risoluzione per la tesi.
+# - <protein_folder>_map_preview.png: Plot diagnostico a 3 pannelli ad alta risoluzione.
 # ======================================================================================
 
 import os
@@ -59,7 +60,7 @@ CHARGE_SCALE = {
 
 GRID_SIZE = 32  
 PROJECTED_DIR = "outputs/task3/projected_points/"
-DATA_DIR = "all/"
+DATA_DIR = "outputs/task1/"
 OUTPUT_MAPS_DIR = "outputs/task3/interface_maps/"
 
 os.makedirs(OUTPUT_MAPS_DIR, exist_ok=True)
@@ -90,52 +91,28 @@ for index, file_path in enumerate(file_list, 1):
         else:
             df_points['geom_channel'] = 1.0
             
-        # 2. Caricamento dei file dei residui d'interfaccia
-        rec_res_path = os.path.join(DATA_DIR, protein_folder, "receptor_interface_residues.csv")
-        lig_res_path = os.path.join(DATA_DIR, protein_folder, "ligand_interface_residues.csv")
-        
-        if not (os.path.exists(rec_res_path) and os.path.exists(lig_res_path)):
-            continue
-            
-        df_rec_res = pd.read_csv(rec_res_path)
-        df_lig_res = pd.read_csv(lig_res_path)
-        
-        # Estrazione degli amminoacidi reali dalla colonna verificata 'residue_name'
-        list_rec_aa = df_rec_res['residue_name'].astype(str).str.upper().str.strip().tolist()
-        list_lig_aa = df_lig_res['residue_name'].astype(str).str.upper().str.strip().tolist()
-        
-        # Pulizia IUPAC a 3 lettere
-        list_rec_aa = [aa[:3] for aa in list_rec_aa if len(aa) >= 3]
-        list_lig_aa = [aa[:3] for aa in list_lig_aa if len(aa) >= 3]
+        # 2. Caricamento delle superfici della Task 1 (una riga per punto, con residue_name)
+        surfaces = {}
+        for side in ('ligand', 'receptor'):
+            surf_path = os.path.join(DATA_DIR, protein_folder, f"{side}_surface_patch.csv")
+            if not os.path.exists(surf_path):
+                raise FileNotFoundError(surf_path)
+            surfaces[side] = pd.read_csv(surf_path, usecols=['x', 'y', 'z', 'residue_name'])
 
+        # 3. Assegnazione punto-residuo tramite center_index (riga della superficie Task 1)
         charges = []
         hydrophobicity = []
-        
-        rec_counter = 0
-        lig_counter = 0
-        
-        # 3. Assegnazione delle proprietà con pulizia stringhe robusta via 'in'
-        for idx, row in df_points.iterrows():
-            source_str = str(row['source']).lower().strip()
-            
-            if 'ligand' in source_str and list_lig_aa:
-                res_name = list_lig_aa[lig_counter % len(list_lig_aa)]
-                lig_counter += 1
-            elif ('receptor' in source_str or 'rec' in source_str) and list_rec_aa:
-                res_name = list_rec_aa[rec_counter % len(list_rec_aa)]
-                rec_counter += 1
-            else:
-                # Fallback basato sulla prima lista valida se sballa il parsing testuale
-                if list_rec_aa:
-                    res_name = list_rec_aa[idx % len(list_rec_aa)]
-                elif list_lig_aa:
-                    res_name = list_lig_aa[idx % len(list_lig_aa)]
-                else:
-                    res_name = 'ALA'
-            
+        for _, row in df_points.iterrows():
+            side = 'ligand' if 'ligand' in str(row['source']).lower() else 'receptor'
+            surf = surfaces[side]
+            i = int(row['center_index'])
+            ref = surf.iloc[i]
+            if max(abs(ref['x'] - row['x']), abs(ref['y'] - row['y']), abs(ref['z'] - row['z'])) > 1e-3:
+                raise ValueError(f"coordinate non coincidenti per {side} center_index={i}")
+            res_name = str(ref['residue_name']).upper().strip()[:3]
             charges.append(CHARGE_SCALE.get(res_name, 0.0))
             hydrophobicity.append(HYDROPHOBICITY_SCALE.get(res_name, 0.0))
-            
+
         df_points['charge'] = charges
         df_points['hydrophobicity'] = hydrophobicity
         
@@ -198,6 +175,6 @@ for index, file_path in enumerate(file_list, 1):
             print(f"[{index}/{len(file_list)}] Mappa 2D generata con successo per {protein_folder}")
             
     except Exception as e:
-        print(f"❌ Errore critico per {protein_folder}: {str(e)}")
+        print(f"Errore per {protein_folder}: {str(e)}")
 
-print(f"\n✅ Pipeline terminata con successo! Le mappe si trovano in: {OUTPUT_MAPS_DIR}")
+print(f"\nPipeline terminata. Le mappe si trovano in: {OUTPUT_MAPS_DIR}")

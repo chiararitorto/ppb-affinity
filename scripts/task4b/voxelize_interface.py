@@ -5,10 +5,8 @@
 # Converte le patch di superficie prodotte dalla Task 1 (ligand_surface_patch.csv,
 # receptor_surface_patch.csv) in un tensore 3D a 4 canali (4, GRID_SIZE, GRID_SIZE, GRID_SIZE),
 # senza passare dal matching Zernike 2D ne' dalla proiezione PCA su piano medio usati dalla
-# pipeline principale (Task 2-3). A differenza della Task 3, i canali di carica e idrofobicita'
-# usano la VERA identita' del residuo per ciascun punto (colonna 'residue_name', presente nei
-# file della Task 1 ma persa nel sottocampionamento della Task 2) -- non l'assegnazione per
-# interleaving descritta in Sezione 7.2 del report.
+# pipeline principale (Task 2-3). Come nella Task 3, i canali di carica e idrofobicita'
+# usano l'identita' del residuo di ciascun punto (colonna 'residue_name' dei file della Task 1).
 #
 # CANALI:
 #   0. Densita' ligando   (occupazione locale, zero lontano dal ligando)

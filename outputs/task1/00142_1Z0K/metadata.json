@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 142,
+    "pdb_id": "1Z0K",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 7.7e-06,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Rab4A GTPase.GNP",
+    "receptor_name": "RAB4 binding domain of Rabenosyn",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1Z0K.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 3651,
+    "ligand_atoms": 1348,
+    "receptor_atoms": 475,
+    "ligand_interface_residues": 23,
+    "receptor_interface_residues": 23,
+    "residue_contacts": 63,
+    "ligand_patch_atoms": 199,
+    "receptor_patch_atoms": 194,
+    "ligand_surface_points": 23711,
+    "receptor_surface_points": 25298,
+    "ligand_full_surface_points": 252067,
+    "receptor_full_surface_points": 64003
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

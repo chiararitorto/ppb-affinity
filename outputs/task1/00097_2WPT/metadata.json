@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 97,
+    "pdb_id": "2WPT",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 1.5e-08,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Colicin E9 nuclease",
+    "receptor_name": "Im2 immunity protein",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2WPT.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 1586,
+    "ligand_atoms": 686,
+    "receptor_atoms": 900,
+    "ligand_interface_residues": 26,
+    "receptor_interface_residues": 22,
+    "residue_contacts": 61,
+    "ligand_patch_atoms": 200,
+    "receptor_patch_atoms": 172,
+    "ligand_surface_points": 42255,
+    "receptor_surface_points": 31895,
+    "ligand_full_surface_points": 147362,
+    "receptor_full_surface_points": 146653
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

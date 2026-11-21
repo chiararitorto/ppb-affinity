@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 1,
+    "pdb_id": "1JTG",
+    "ligand_chains": [
+      "B"
+    ],
+    "receptor_chains": [
+      "A"
+    ],
+    "kd_m": 4e-10,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "beta-lactamase inhibitor protein",
+    "receptor_name": "beta-lactamase TEM-1",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1JTG.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 6507,
+    "ligand_atoms": 1236,
+    "receptor_atoms": 2022,
+    "ligand_interface_residues": 33,
+    "receptor_interface_residues": 35,
+    "residue_contacts": 93,
+    "ligand_patch_atoms": 294,
+    "receptor_patch_atoms": 274,
+    "ligand_surface_points": 44256,
+    "receptor_surface_points": 34694,
+    "ligand_full_surface_points": 158542,
+    "receptor_full_surface_points": 206531
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

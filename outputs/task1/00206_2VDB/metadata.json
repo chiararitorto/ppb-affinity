@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 206,
+    "pdb_id": "2VDB",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 1.5e-10,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Serum albumin",
+    "receptor_name": "Peptostreptococcal albumin-binding protein",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2VDB.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4872,
+    "ligand_atoms": 4435,
+    "receptor_atoms": 437,
+    "ligand_interface_residues": 26,
+    "receptor_interface_residues": 20,
+    "residue_contacts": 61,
+    "ligand_patch_atoms": 222,
+    "receptor_patch_atoms": 155,
+    "ligand_surface_points": 46287,
+    "receptor_surface_points": 22464,
+    "ligand_full_surface_points": 829368,
+    "receptor_full_surface_points": 58826
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

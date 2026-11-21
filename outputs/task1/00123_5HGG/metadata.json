@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 123,
+    "pdb_id": "5HGG",
+    "ligand_chains": [
+      "T"
+    ],
+    "receptor_chains": [
+      "A"
+    ],
+    "kd_m": 5.4e-11,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Nb4",
+    "receptor_name": "uPA",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/5HGG.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 5910,
+    "ligand_atoms": 984,
+    "receptor_atoms": 1954,
+    "ligand_interface_residues": 22,
+    "receptor_interface_residues": 41,
+    "residue_contacts": 86,
+    "ligand_patch_atoms": 195,
+    "receptor_patch_atoms": 321,
+    "ligand_surface_points": 59931,
+    "receptor_surface_points": 35574,
+    "ligand_full_surface_points": 201889,
+    "receptor_full_surface_points": 233590
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

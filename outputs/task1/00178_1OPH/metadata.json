@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 178,
+    "pdb_id": "1OPH",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 5e-09,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Alpha-1-antitrypsin",
+    "receptor_name": "Bovine trypsin",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1OPH.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4542,
+    "ligand_atoms": 2918,
+    "receptor_atoms": 1624,
+    "ligand_interface_residues": 12,
+    "receptor_interface_residues": 30,
+    "residue_contacts": 62,
+    "ligand_patch_atoms": 96,
+    "receptor_patch_atoms": 226,
+    "ligand_surface_points": 15624,
+    "receptor_surface_points": 24315,
+    "ligand_full_surface_points": 307246,
+    "receptor_full_surface_points": 174201
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

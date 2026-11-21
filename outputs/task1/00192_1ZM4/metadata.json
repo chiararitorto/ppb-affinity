@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 192,
+    "pdb_id": "1ZM4",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 1.3e-06,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Elongation factor 2",
+    "receptor_name": "Diphtheria toxin A catalytic domain",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1ZM4.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 24125,
+    "ligand_atoms": 6405,
+    "receptor_atoms": 1630,
+    "ligand_interface_residues": 23,
+    "receptor_interface_residues": 22,
+    "residue_contacts": 50,
+    "ligand_patch_atoms": 185,
+    "receptor_patch_atoms": 169,
+    "ligand_surface_points": 24343,
+    "receptor_surface_points": 26509,
+    "ligand_full_surface_points": 680672,
+    "receptor_full_surface_points": 297106
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

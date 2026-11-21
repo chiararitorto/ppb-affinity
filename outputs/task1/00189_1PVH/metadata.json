@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 189,
+    "pdb_id": "1PVH",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 8e-08,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "IL6 receptor beta chain D2-D3 domains",
+    "receptor_name": "Leukemia inhibitory factor",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1PVH.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 5834,
+    "ligand_atoms": 1625,
+    "receptor_atoms": 1292,
+    "ligand_interface_residues": 16,
+    "receptor_interface_residues": 20,
+    "residue_contacts": 49,
+    "ligand_patch_atoms": 137,
+    "receptor_patch_atoms": 157,
+    "ligand_surface_points": 17920,
+    "receptor_surface_points": 21912,
+    "ligand_full_surface_points": 182578,
+    "receptor_full_surface_points": 152505
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -32,12 +32,13 @@ class ProteinInterfaceDataset(Dataset):
     standardizzazione finché non viene chiamato standardize_with(means, stds).
     """
 
-    # 1NVU compare due volte nel benchmark originale (catena ligando Q, KD=3.6e-06 M,
-    # e catena ligando R, KD=1.9e-06 M; stesso recettore S). La pipeline della Task 1
-    # indicizza l'output per PDB ID, quindi una sola delle due geometrie sopravvive su
-    # disco (verificato: la catena Q). Il target di affinità nel CSV corrisponde però
-    # alla catena R: il tensore e il target sono quindi disallineati per questo
-    # complesso. Escluso esplicitamente per integrità dei dati (1 campione su 118).
+    # 1NVU compare due volte nel benchmark (catena ligando Q, KD=3.6e-06 M, e catena
+    # ligando R, KD=1.9e-06 M; stesso recettore S). Non sono varianti dello stesso
+    # complesso: 1NVU e' Ras-SOS-Ras e Q e R sono due Ras legati a due siti diversi di SOS,
+    # cioe' due interfacce distinte. Su disco c'e' una sola geometria (la Q) per un bug di
+    # filter_dimers.py (ora corretto), mentre qui il tensore viene cercato per PDB ID e
+    # verrebbe associato a entrambe le righe. Per non duplicare il campione con due target
+    # diversi, 1NVU e' escluso (recuperare Q e R richiede di rilanciare la Task 2 per R).
     EXCLUDED_PDB_IDS = {'1NVU'}
 
     def __init__(self, csv_affinity_path, maps_dir):

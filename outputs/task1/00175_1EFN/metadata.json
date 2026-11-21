@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 175,
+    "pdb_id": "1EFN",
+    "ligand_chains": [
+      "B"
+    ],
+    "receptor_chains": [
+      "A"
+    ],
+    "kd_m": 3.8e-08,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "HIV-1-NEF protein",
+    "receptor_name": "Fyn Kinase SH3 domain",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1EFN.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 2643,
+    "ligand_atoms": 882,
+    "receptor_atoms": 428,
+    "ligand_interface_residues": 16,
+    "receptor_interface_residues": 15,
+    "residue_contacts": 44,
+    "ligand_patch_atoms": 139,
+    "receptor_patch_atoms": 132,
+    "ligand_surface_points": 18373,
+    "receptor_surface_points": 17148,
+    "ligand_full_surface_points": 113023,
+    "receptor_full_surface_points": 51918
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

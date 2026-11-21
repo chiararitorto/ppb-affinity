@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 92,
+    "pdb_id": "1T6B",
+    "ligand_chains": [
+      "X"
+    ],
+    "receptor_chains": [
+      "Y"
+    ],
+    "kd_m": 1.7e-10,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Anthrax protective antigen",
+    "receptor_name": "Anthrax toxin receptor",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1T6B.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 6713,
+    "ligand_atoms": 5396,
+    "receptor_atoms": 1317,
+    "ligand_interface_residues": 29,
+    "receptor_interface_residues": 27,
+    "residue_contacts": 74,
+    "ligand_patch_atoms": 242,
+    "receptor_patch_atoms": 197,
+    "ligand_surface_points": 32284,
+    "receptor_surface_points": 38236,
+    "ligand_full_surface_points": 720978,
+    "receptor_full_surface_points": 152775
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

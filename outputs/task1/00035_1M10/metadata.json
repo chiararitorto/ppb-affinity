@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 35,
+    "pdb_id": "1M10",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 5.8e-09,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Von Willebrand factor dom. A1",
+    "receptor_name": "Glycoprotein IB-alpha",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1M10.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 3688,
+    "ligand_atoms": 1601,
+    "receptor_atoms": 2087,
+    "ligand_interface_residues": 27,
+    "receptor_interface_residues": 31,
+    "residue_contacts": 69,
+    "ligand_patch_atoms": 243,
+    "receptor_patch_atoms": 248,
+    "ligand_surface_points": 34697,
+    "receptor_surface_points": 29946,
+    "ligand_full_surface_points": 171383,
+    "receptor_full_surface_points": 228678
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 137,
+    "pdb_id": "2GAF",
+    "ligand_chains": [
+      "D"
+    ],
+    "receptor_chains": [
+      "A"
+    ],
+    "kd_m": 1.2e-09,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Poly(A) polymerase VP55",
+    "receptor_name": "Vaccinia protein VP39",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2GAF.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 6011,
+    "ligand_atoms": 3641,
+    "receptor_atoms": 2370,
+    "ligand_interface_residues": 40,
+    "receptor_interface_residues": 43,
+    "residue_contacts": 97,
+    "ligand_patch_atoms": 328,
+    "receptor_patch_atoms": 355,
+    "ligand_surface_points": 46138,
+    "receptor_surface_points": 46954,
+    "ligand_full_surface_points": 386345,
+    "receptor_full_surface_points": 256400
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

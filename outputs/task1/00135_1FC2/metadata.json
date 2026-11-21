@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 135,
+    "pdb_id": "1FC2",
+    "ligand_chains": [
+      "C"
+    ],
+    "receptor_chains": [
+      "D"
+    ],
+    "kd_m": 2.3e-08,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Staphylococcus Protein A",
+    "receptor_name": "Human Fc fragment",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1FC2.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 2125,
+    "ligand_atoms": 359,
+    "receptor_atoms": 1656,
+    "ligand_interface_residues": 16,
+    "receptor_interface_residues": 20,
+    "residue_contacts": 46,
+    "ligand_patch_atoms": 144,
+    "receptor_patch_atoms": 168,
+    "ligand_surface_points": 30304,
+    "receptor_surface_points": 22327,
+    "ligand_full_surface_points": 59967,
+    "receptor_full_surface_points": 192733
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -26,13 +26,13 @@ print(f"Trovati {len(dimer_df)} dimeri su {len(df)} proteine totali.")
 for index, row in dimer_df.iterrows():
     pdb_id = row['PDB'].strip() # Uso 'PDB' come visto nello screenshot
     
-    # Cerchiamo la cartella in outputs/all
-    found_folder = None
-    for folder in os.listdir(all_outputs_dir):
-        if folder.endswith(pdb_id):
-            found_folder = folder
-            break
-            
+    # La pipeline della Task 1 scrive una cartella per RIGA del dataset ({row_index:05d}_{PDB}).
+    # Si cerca quindi la cartella della riga corrente, non la prima che termina con il PDB ID:
+    # altrimenti un PDB presente su piu' righe (es. 1NVU, catene ligando Q e R) verrebbe
+    # copiato una sola volta.
+    candidate = f"{index:05d}_{pdb_id}"
+    found_folder = candidate if os.path.isdir(os.path.join(all_outputs_dir, candidate)) else None
+
     if found_folder:
         src = os.path.join(all_outputs_dir, found_folder)
         dst = os.path.join(dimers_output_dir, found_folder)

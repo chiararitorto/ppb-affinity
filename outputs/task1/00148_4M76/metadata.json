@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 148,
+    "pdb_id": "4M76",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 4.5e-07,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "C3D",
+    "receptor_name": "Integrin alpha-M CD11B A-domain",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/4M76.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 3771,
+    "ligand_atoms": 2326,
+    "receptor_atoms": 1445,
+    "ligand_interface_residues": 14,
+    "receptor_interface_residues": 18,
+    "residue_contacts": 41,
+    "ligand_patch_atoms": 120,
+    "receptor_patch_atoms": 133,
+    "ligand_surface_points": 16208,
+    "receptor_surface_points": 28427,
+    "ligand_full_surface_points": 245448,
+    "receptor_full_surface_points": 174019
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 80,
+    "pdb_id": "2ABZ",
+    "ligand_chains": [
+      "B"
+    ],
+    "receptor_chains": [
+      "E"
+    ],
+    "kd_m": 2.8e-09,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Carboxypeptidase A1",
+    "receptor_name": "Leech carboxypeptidase inhibitor",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2ABZ.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 6504,
+    "ligand_atoms": 2393,
+    "receptor_atoms": 463,
+    "ligand_interface_residues": 25,
+    "receptor_interface_residues": 17,
+    "residue_contacts": 60,
+    "ligand_patch_atoms": 204,
+    "receptor_patch_atoms": 147,
+    "ligand_surface_points": 45404,
+    "receptor_surface_points": 19482,
+    "ligand_full_surface_points": 247283,
+    "receptor_full_surface_points": 56644
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 201,
+    "pdb_id": "3DAW",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 2e-05,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Alpha actin",
+    "receptor_name": "Twinfilin-1 C-terminal domain",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/3DAW.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4088,
+    "ligand_atoms": 2933,
+    "receptor_atoms": 1155,
+    "ligand_interface_residues": 35,
+    "receptor_interface_residues": 24,
+    "residue_contacts": 75,
+    "ligand_patch_atoms": 273,
+    "receptor_patch_atoms": 201,
+    "ligand_surface_points": 34950,
+    "receptor_surface_points": 28124,
+    "ligand_full_surface_points": 419735,
+    "receptor_full_surface_points": 127319
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

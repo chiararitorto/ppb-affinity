@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 57,
+    "pdb_id": "1BVN",
+    "ligand_chains": [
+      "P"
+    ],
+    "receptor_chains": [
+      "T"
+    ],
+    "kd_m": 9.2e-12,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Alpha-amylase",
+    "receptor_name": "Tendamistat",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1BVN.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4445,
+    "ligand_atoms": 3909,
+    "receptor_atoms": 536,
+    "ligand_interface_residues": 33,
+    "receptor_interface_residues": 21,
+    "residue_contacts": 73,
+    "ligand_patch_atoms": 265,
+    "receptor_patch_atoms": 179,
+    "ligand_surface_points": 41340,
+    "receptor_surface_points": 21726,
+    "ligand_full_surface_points": 407937,
+    "receptor_full_surface_points": 65293
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 38,
+    "pdb_id": "2PCB",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 1e-05,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Cyt C peroxidase",
+    "receptor_name": "Cytochrome C, horse",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/2PCB.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 5694,
+    "ligand_atoms": 2414,
+    "receptor_atoms": 866,
+    "ligand_interface_residues": 11,
+    "receptor_interface_residues": 13,
+    "residue_contacts": 27,
+    "ligand_patch_atoms": 95,
+    "receptor_patch_atoms": 112,
+    "ligand_surface_points": 13788,
+    "receptor_surface_points": 22234,
+    "ligand_full_surface_points": 419566,
+    "receptor_full_surface_points": 262988
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}

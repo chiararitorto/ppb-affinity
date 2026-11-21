@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "record": {
+    "row_index": 98,
+    "pdb_id": "1EAW",
+    "ligand_chains": [
+      "A"
+    ],
+    "receptor_chains": [
+      "B"
+    ],
+    "kd_m": 5e-11,
+    "source_dataset": "Affinity Benchmark v5.5",
+    "ligand_name": "Matriptase",
+    "receptor_name": "BPTI",
+    "mutations": null,
+    "model": null
+  },
+  "pdb_path": "data/pdb/1EAW.pdb",
+  "surface_backend": "chimerax",
+  "chimerax_surface_mode": "full_chain_then_filter",
+  "ligand_surface_filter": "nearest_residue_in_interface",
+  "receptor_surface_filter": "nearest_residue_in_interface",
+  "counts": {
+    "all_atoms": 4618,
+    "ligand_atoms": 1864,
+    "receptor_atoms": 445,
+    "ligand_interface_residues": 30,
+    "receptor_interface_residues": 22,
+    "residue_contacts": 77,
+    "ligand_patch_atoms": 239,
+    "receptor_patch_atoms": 173,
+    "ligand_surface_points": 28300,
+    "receptor_surface_points": 22910,
+    "ligand_full_surface_points": 195053,
+    "receptor_full_surface_points": 56637
+  },
+  "parameters": {
+    "contact_cutoff_angstrom": 5.0,
+    "dimers_only": false,
+    "download_verify_ssl": true,
+    "surface": {
+      "samples_per_atom": 64,
+      "probe_radius": 1.4,
+      "occlusion_tolerance": 0.05,
+      "density_alpha": 1.8,
+      "density_cutoff_angstrom": 6.0
+    },
+    "surface_backend": "chimerax",
+    "chimerax_full_surface_filter": true,
+    "chimerax_bin": "/Applications/ChimeraX-1.11.1.app/Contents/MacOS/ChimeraX",
+    "chimerax_csv_stride": 1
+  }
+}
